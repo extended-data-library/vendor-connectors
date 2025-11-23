@@ -79,7 +79,7 @@ source = ["cloud_connectors"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 0
+fail_under = 0  # Set to 0 initially since there are no tests yet. Increase once tests are added.
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",

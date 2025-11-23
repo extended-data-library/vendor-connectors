@@ -60,8 +60,12 @@ jobs:
           source .venv/bin/activate
           # Create tests directory if it doesn't exist
           mkdir -p tests
-          # Run pytest - it will handle empty test suites gracefully
-          pytest --cov=cloud_connectors --cov-report=xml --cov-report=term || echo "No tests to run"
+          # Run pytest - it will exit with code 5 if no tests are collected
+          pytest --cov=cloud_connectors --cov-report=xml --cov-report=term || EXIT_CODE=$?
+          # Exit code 5 means no tests were collected, which is OK for now
+          if [ "${EXIT_CODE:-0}" != "0" ] && [ "${EXIT_CODE:-0}" != "5" ]; then
+            exit $EXIT_CODE
+          fi
       - name: Upload coverage data
         uses: actions/upload-artifact@v5
         with:
