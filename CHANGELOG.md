@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v202511.6.1 (2025-11-28)
+
+### Bug Fixes
+
+- Use correct PYPI_TOKEN secret for PyPI publishing
+  ([`093feb1`](https://github.com/jbcom/jbcom-control-center/commit/093feb1c87add9d7890fa9dd84a02ea7d2a6d110))
+
+
+## v202511.6.0 (2025-11-28)
+
+### Code Style
+
+- Fix formatting
+  ([`5069b71`](https://github.com/jbcom/jbcom-control-center/commit/5069b71c56a2a20a94d2fdecc33b53d35fba229d))
+
+### Features
+
+- Trigger release with PYPI_API_TOKEN configured
+  ([`cab7c2c`](https://github.com/jbcom/jbcom-control-center/commit/cab7c2ca43d6286f521e2e47ecd6911f6bf106df))
+
+
 ## v202511.5.0 (2025-11-28)
 
 ### Features
