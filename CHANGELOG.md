@@ -2,6 +2,26 @@
 
 <!-- version list -->
 
+## v202511.7.0 (2025-11-29)
+
+### Features
+
+- Add FSC fleet coordination support
+  ([`7a046b6`](https://github.com/jbcom/jbcom-control-center/commit/7a046b6578cd2216542e893d61ecd501d8305a8c))
+
+- Add list_secrets to AWS and Vault connectors
+  ([#223](https://github.com/jbcom/jbcom-control-center/pull/223),
+  [`755ce0d`](https://github.com/jbcom/jbcom-control-center/commit/755ce0dab6e1ffe5c133495cc0d41d9717e43b6e))
+
+
+## v202511.6.2 (2025-11-28)
+
+### Features
+
+- Add Vault/AWS secret listing helpers with prefix filtering and path normalization
+  ([#202](https://github.com/FlipsideCrypto/terraform-modules/issues/202))
+
+
 ## v202511.6.1 (2025-11-28)
 
 ### Bug Fixes
