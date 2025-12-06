@@ -1,5 +1,7 @@
 """Rich logging configuration for Meshy SDK."""
 
+from __future__ import annotations
+
 import logging
 
 from rich.logging import RichHandler

@@ -1,5 +1,7 @@
 """Tests for SlackConnector."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 from vendor_connectors.slack import SlackConnector

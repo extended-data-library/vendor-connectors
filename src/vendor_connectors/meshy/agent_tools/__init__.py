@@ -26,6 +26,8 @@ Usage:
     from mesh_toolkit.agent_tools import get_provider, list_providers
 """
 
+from __future__ import annotations
+
 from mesh_toolkit.agent_tools.registry import (
     ToolProvider,
     get_provider,

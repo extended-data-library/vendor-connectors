@@ -1,5 +1,7 @@
 """Tests for GithubConnector."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 from vendor_connectors.github import GithubConnector

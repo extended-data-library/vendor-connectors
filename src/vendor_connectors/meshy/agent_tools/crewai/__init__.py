@@ -27,6 +27,8 @@ Requirements:
     pip install mesh-toolkit[crewai]
 """
 
+from __future__ import annotations
+
 from mesh_toolkit.agent_tools.crewai.provider import (
     CrewAIToolProvider,
     get_tool,

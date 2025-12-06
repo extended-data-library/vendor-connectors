@@ -27,6 +27,8 @@ Requirements:
     - mcp (Model Context Protocol SDK)
 """
 
+from __future__ import annotations
+
 from mesh_toolkit.agent_tools.mcp.provider import (
     MCPToolProvider,
     create_server,

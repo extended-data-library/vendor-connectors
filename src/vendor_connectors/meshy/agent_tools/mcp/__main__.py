@@ -7,6 +7,8 @@ Environment:
     MESHY_API_KEY - Required for API access
 """
 
+from __future__ import annotations
+
 import os
 
 

@@ -1,5 +1,7 @@
 """Tests for TaskRepository persistence layer."""
 
+from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 

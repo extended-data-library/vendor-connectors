@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import time
 
-from . import base
-from .models import RiggingRequest, RiggingResult, TaskStatus
+from vendor_connectors.meshy import base
+from vendor_connectors.meshy.models import RiggingRequest, RiggingResult, TaskStatus
 
 
 def create(request: RiggingRequest) -> str:

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import time
 
-from . import base
-from .models import ArtStyle, TaskStatus, Text3DRequest, Text3DResult
+from vendor_connectors.meshy import base
+from vendor_connectors.meshy.models import ArtStyle, TaskStatus, Text3DRequest, Text3DResult
 
 
 def create(request: Text3DRequest) -> str:

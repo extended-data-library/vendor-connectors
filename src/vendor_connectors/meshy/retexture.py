@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import time
 
-from . import base
-from .models import RetextureRequest, RetextureResult, TaskStatus
+from vendor_connectors.meshy import base
+from vendor_connectors.meshy.models import RetextureRequest, RetextureResult, TaskStatus
 
 
 def create(request: RetextureRequest) -> str:

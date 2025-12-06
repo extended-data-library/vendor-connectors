@@ -1,5 +1,7 @@
 """Pytest configuration and fixtures for vendor_connectors tests."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock
 
 import pytest

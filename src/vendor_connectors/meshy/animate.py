@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import time
 
-from . import base
-from .models import AnimationRequest, AnimationResult, TaskStatus
+from vendor_connectors.meshy import base
+from vendor_connectors.meshy.models import AnimationRequest, AnimationResult, TaskStatus
 
 
 def create(request: AnimationRequest) -> str:

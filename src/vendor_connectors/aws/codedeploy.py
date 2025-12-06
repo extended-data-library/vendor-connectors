@@ -16,7 +16,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError, WaiterError
 from lifecyclelogging import Logging
 
-from . import AWSConnector
+from vendor_connectors.aws import AWSConnector
 
 _BATCH_GET_LIMIT = 25
 _VALID_FILE_BEHAVIORS = {"DISALLOW", "OVERWRITE", "RETAIN"}

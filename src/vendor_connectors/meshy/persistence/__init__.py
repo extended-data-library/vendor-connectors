@@ -16,10 +16,12 @@ Usage:
     similar = store.search_similar(query_embedding)
 """
 
-from .repository import TaskRepository
-from .schemas import ArtifactRecord, AssetManifest, ProjectManifest, TaskGraphEntry
-from .utils import canonicalize_spec, compute_spec_hash
-from .vector_store import GenerationRecord, SimilarityResult, VectorStore, get_embedding
+from __future__ import annotations
+
+from meshy.persistence.repository import TaskRepository
+from meshy.persistence.schemas import ArtifactRecord, AssetManifest, ProjectManifest, TaskGraphEntry
+from meshy.persistence.utils import canonicalize_spec, compute_spec_hash
+from meshy.persistence.vector_store import GenerationRecord, SimilarityResult, VectorStore, get_embedding
 
 __all__ = [
     # JSON manifests

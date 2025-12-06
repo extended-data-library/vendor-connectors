@@ -12,8 +12,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from . import base, text3d
-from .models import ArtStyle, AssetIntent, AssetSpec, Text3DRequest
+from vendor_connectors.meshy import base, text3d
+from vendor_connectors.meshy.models import ArtStyle, AssetIntent, AssetSpec, Text3DRequest
 
 
 @dataclass

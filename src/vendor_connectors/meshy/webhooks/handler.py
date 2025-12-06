@@ -6,10 +6,10 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
-from .. import base
+from meshy import base
 from ..persistence.repository import TaskRepository
 from ..persistence.schemas import ArtifactRecord
-from .schemas import MeshyWebhookPayload
+from meshy.webhooks.schemas import MeshyWebhookPayload
 
 
 def _utc_now() -> datetime:

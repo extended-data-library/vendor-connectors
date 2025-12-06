@@ -1,5 +1,7 @@
 """Tests for cloud_params module."""
 
+from __future__ import annotations
+
 from vendor_connectors.cloud_params import (
     get_aws_call_params,
     get_cloud_call_params,

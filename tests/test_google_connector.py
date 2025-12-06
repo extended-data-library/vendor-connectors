@@ -1,5 +1,7 @@
 """Tests for GoogleConnector."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 from vendor_connectors.google import GoogleConnector

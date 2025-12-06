@@ -19,8 +19,10 @@ Usage:
     retextured = retexture.apply(model.id, "golden with gems")
 """
 
-from . import animate, base, retexture, rigging, text3d
-from .base import MeshyAPIError, RateLimitError
+from __future__ import annotations
+
+from vendor_connectors.meshy import animate, base, retexture, rigging, text3d
+from vendor_connectors.meshy.base import MeshyAPIError, RateLimitError
 
 __all__ = [
     # Errors

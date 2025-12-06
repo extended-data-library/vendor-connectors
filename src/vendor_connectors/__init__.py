@@ -25,6 +25,8 @@ Usage:
         pass
 """
 
+from __future__ import annotations
+
 __version__ = "202511.12.0"
 
 from vendor_connectors.aws import (

@@ -1,6 +1,8 @@
 """Webhook handling for Meshy API callbacks."""
 
-from .handler import WebhookHandler
-from .schemas import MeshyWebhookPayload
+from __future__ import annotations
+
+from meshy.webhooks.handler import WebhookHandler
+from meshy.webhooks.schemas import MeshyWebhookPayload
 
 __all__ = ["MeshyWebhookPayload", "WebhookHandler"]
