@@ -50,7 +50,21 @@ def refine(task_id: str) -> str:
 
 
 def poll(task_id: str, interval: float = 5.0, timeout: float = 600.0) -> Image3DResult:
-    """Poll until complete or failed."""
+    """
+    Polls the status of an image-to-3D task until it completes, fails, expires, or times out.
+
+    Args:
+        task_id: The ID of the image-to-3D task to poll.
+        interval: Time in seconds between polling attempts (default: 5.0).
+        timeout: Maximum time in seconds to wait for task completion (default: 600.0).
+
+    Returns:
+        Image3DResult: The result of the completed task.
+
+    Raises:
+        RuntimeError: If the task fails or expires.
+        TimeoutError: If the polling times out before the task completes.
+    """
     start = time.time()
     while True:
         result = get(task_id)
