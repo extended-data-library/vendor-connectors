@@ -56,9 +56,6 @@ __version__ = "0.2.0"
 
 # Sub-packages
 from vendor_connectors import ai, meshy
-
-# AI/Agent connectors
-from vendor_connectors.anthropic import AnthropicConnector
 from vendor_connectors.aws import (
     AWSConnector,
     AWSConnectorFull,

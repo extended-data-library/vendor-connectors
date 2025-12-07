@@ -63,6 +63,7 @@ tests = [
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-timeout>=2.4.0",
 ]
 # Meshy webhooks support
 webhooks = [
@@ -168,6 +169,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+timeout = 30
+timeout_method = "signal"
 addopts = [
     "--verbose",
     "--cov=vendor_connectors",
@@ -176,10 +179,19 @@ addopts = [
 
 [tool.coverage.run]
 omit = [
-    # AI sub-package requires optional dependencies (langchain, langgraph)
-    "src/vendor_connectors/ai/*",
-    # Meshy agent_tools requires optional dependencies (crewai, mcp)
-    "src/vendor_connectors/meshy/agent_tools/*",
+    # Provider implementations require optional dependencies (crewai, mcp, langchain)
+    # Core types (base.py), tools, and registry are tested without optional deps
+    "src/vendor_connectors/ai/providers/crewai/provider.py",
+    "src/vendor_connectors/ai/providers/mcp/provider.py",
+    "src/vendor_connectors/ai/providers/mcp/__main__.py",
+    # LangChain-based providers require optional AI deps
+    "src/vendor_connectors/ai/providers/anthropic.py",
+    "src/vendor_connectors/ai/providers/google.py",
+    "src/vendor_connectors/ai/providers/openai.py",
+    "src/vendor_connectors/ai/providers/ollama.py",
+    "src/vendor_connectors/ai/providers/xai.py",
+    "src/vendor_connectors/ai/connector.py",
+    "src/vendor_connectors/ai/workflows/*",
 ]
 
 [tool.coverage.report]
