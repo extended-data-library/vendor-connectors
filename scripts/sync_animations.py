@@ -123,16 +123,23 @@ def parse_animations_from_html(html: str) -> list[dict]:
             text = script.get_text()
             # Look for animation data patterns
             if "animation" in text.lower() and "id" in text.lower():
-                # Try to extract JSON objects
-                json_matches = re.findall(r'\{[^{}]*"id"\s*:\s*\d+[^{}]*\}', text)
-                for match in json_matches:
+                # Try to extract JSON objects robustly
+                decoder = json.JSONDecoder()
+                idx = 0
+                text_len = len(text)
+                while idx < text_len:
+                    # Skip whitespace
+                    while idx < text_len and text[idx].isspace():
+                        idx += 1
+                    if idx >= text_len:
+                        break
                     try:
-                        data = json.loads(match)
-                        if "id" in data:
-                            animations.append(data)
+                        obj, end = decoder.raw_decode(text, idx)
+                        if isinstance(obj, dict) and "id" in obj:
+                            animations.append(obj)
+                        idx = end
                     except json.JSONDecodeError:
-                        pass
-
+                        idx += 1
     # If still no data, try parsing from structured divs/lists
     if not animations:
         # Look for animation entries in various formats
