@@ -38,6 +38,9 @@ class VendorConnectors(DirectedInputsClass):
     For Meshy AI, use the functional interface directly:
         from vendor_connectors.meshy import text3d, image3d, rigging, animate
         model = text3d.generate("a medieval sword")
+
+    Meshy does not provide a `get_meshy_client()` method because it uses a functional interface
+    rather than a connector class, in order to simplify async operations and usage.
     """
 
     def __init__(
