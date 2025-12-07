@@ -230,7 +230,7 @@ class TestS3ObjectOperations:
         mock_s3.put_object.return_value = {"ETag": "abc123"}
         aws_connector.get_aws_client = MagicMock(return_value=mock_s3)
 
-        result = aws_connector.put_object("bucket", "key.bin", b"binary data")
+        aws_connector.put_object("bucket", "key.bin", b"binary data")
 
         call_args = mock_s3.put_object.call_args[1]
         assert call_args["Body"] == b"binary data"
@@ -380,27 +380,27 @@ class TestS3BucketFeatures:
         """Test getting bucket features."""
         mock_bucket = MagicMock()
         mock_bucket.creation_date = datetime(2023, 1, 1)
-        
+
         # Mock logging
         mock_logging = MagicMock()
         mock_logging.logging_enabled = {"TargetBucket": "logs"}
         mock_bucket.Logging.return_value = mock_logging
-        
+
         # Mock versioning
         mock_versioning = MagicMock()
         mock_versioning.status = "Enabled"
         mock_bucket.Versioning.return_value = mock_versioning
-        
+
         # Mock lifecycle
         mock_lifecycle = MagicMock()
         mock_lifecycle.rules = [{"Id": "rule1"}]
         mock_bucket.LifecycleConfiguration.return_value = mock_lifecycle
-        
+
         # Mock policy
         mock_policy = MagicMock()
         mock_policy.policy = '{"Version": "2012-10-17"}'
         mock_bucket.Policy.return_value = mock_policy
-        
+
         mock_resource = MagicMock()
         mock_resource.Bucket.return_value = mock_bucket
         aws_connector.get_aws_resource = MagicMock(return_value=mock_resource)
@@ -416,7 +416,7 @@ class TestS3BucketFeatures:
         """Test getting features for non-existent bucket."""
         mock_bucket = MagicMock()
         mock_bucket.creation_date = None
-        
+
         mock_resource = MagicMock()
         mock_resource.Bucket.return_value = mock_bucket
         aws_connector.get_aws_resource = MagicMock(return_value=mock_resource)
@@ -429,14 +429,14 @@ class TestS3BucketFeatures:
         """Test getting bucket features with errors."""
         mock_bucket = MagicMock()
         mock_bucket.creation_date = datetime(2023, 1, 1)
-        
+
         # All features raise errors
         error = ClientError({"Error": {"Code": "NoSuchConfiguration"}}, "GetBucketLogging")
         mock_bucket.Logging.side_effect = error
         mock_bucket.Versioning.side_effect = error
         mock_bucket.LifecycleConfiguration.side_effect = error
         mock_bucket.Policy.side_effect = error
-        
+
         mock_resource = MagicMock()
         mock_resource.Bucket.return_value = mock_bucket
         aws_connector.get_aws_resource = MagicMock(return_value=mock_resource)
@@ -453,15 +453,15 @@ class TestS3BucketFeatures:
         mock_bucket1 = MagicMock()
         mock_bucket1.name = "prod-app-bucket"
         mock_bucket1.creation_date = datetime(2023, 1, 1)
-        
+
         mock_bucket2 = MagicMock()
         mock_bucket2.name = "dev-app-bucket"
         mock_bucket2.creation_date = datetime(2023, 2, 1)
-        
+
         mock_bucket3 = MagicMock()
         mock_bucket3.name = "other-bucket"
         mock_bucket3.creation_date = datetime(2023, 3, 1)
-        
+
         mock_resource = MagicMock()
         mock_resource.buckets.all.return_value = [mock_bucket1, mock_bucket2, mock_bucket3]
         aws_connector.get_aws_resource = MagicMock(return_value=mock_resource)
@@ -546,11 +546,11 @@ class TestS3BucketFeatures:
         mock_bucket = MagicMock()
         mock_bucket.objects.all.return_value.delete = MagicMock()
         mock_bucket.object_versions.all.return_value.delete = MagicMock()
-        
+
         mock_resource = MagicMock()
         mock_resource.Bucket.return_value = mock_bucket
         aws_connector.get_aws_resource = MagicMock(return_value=mock_resource)
-        
+
         mock_s3 = MagicMock()
         aws_connector.get_aws_client = MagicMock(return_value=mock_s3)
 
@@ -563,7 +563,7 @@ class TestS3BucketFeatures:
     def test_get_bucket_sizes(self, aws_connector):
         """Test getting bucket sizes from CloudWatch."""
         mock_cloudwatch = MagicMock()
-        
+
         # Mock size response
         mock_cloudwatch.get_metric_statistics.side_effect = [
             {
@@ -577,17 +577,17 @@ class TestS3BucketFeatures:
                 ]
             },
         ]
-        
+
         mock_s3 = MagicMock()
         mock_s3.list_buckets.return_value = {
             "Buckets": [{"Name": "test-bucket"}]
         }
-        
+
         def get_client(client_name, **kwargs):
             if client_name == "cloudwatch":
                 return mock_cloudwatch
             return mock_s3
-        
+
         aws_connector.get_aws_client = MagicMock(side_effect=get_client)
         aws_connector.list_s3_buckets = MagicMock(return_value={"test-bucket": {}})
 

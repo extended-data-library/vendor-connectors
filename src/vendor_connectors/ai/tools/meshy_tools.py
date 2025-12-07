@@ -33,6 +33,39 @@ from vendor_connectors.ai.base import (
 # =============================================================================
 
 
+def _extract_result_fields(result: object) -> dict[str, object]:
+    """Extract common fields from Meshy API result objects.
+
+    Safely extracts status, model_url, and thumbnail_url from result objects,
+    handling missing attributes gracefully.
+
+    Args:
+        result: A Meshy API result object (Text3DResult, Image3DResult, etc.)
+
+    Returns:
+        Dict with status, model_url, and thumbnail_url fields
+    """
+    # Extract status - prefer .value if it's an enum, otherwise str()
+    if hasattr(result, "status"):
+        status = getattr(result.status, "value", str(result.status))
+    else:
+        status = "unknown"
+
+    # Extract model_url from model_urls.glb if available
+    model_url = None
+    if hasattr(result, "model_urls") and result.model_urls:
+        model_url = result.model_urls.glb
+
+    # Extract thumbnail_url
+    thumbnail_url = getattr(result, "thumbnail_url", None)
+
+    return {
+        "status": status,
+        "model_url": model_url,
+        "thumbnail_url": thumbnail_url,
+    }
+
+
 def handle_text3d_generate(
     prompt: str,
     art_style: str = "sculpture",
@@ -64,15 +97,12 @@ def handle_text3d_generate(
             wait=True,
         )
 
+        fields = _extract_result_fields(result)
         return ToolResult(
             success=True,
             data={
                 "id": result.id,
-                "status": (
-                    getattr(result.status, "value", str(result.status)) if hasattr(result, "status") else "unknown"
-                ),
-                "model_url": (result.model_urls.glb if (hasattr(result, "model_urls") and result.model_urls) else None),
-                "thumbnail_url": getattr(result, "thumbnail_url", None),
+                **fields,
             },
             task_id=result.id,
         ).to_json()
@@ -109,15 +139,12 @@ def handle_image3d_generate(
             wait=True,
         )
 
+        fields = _extract_result_fields(result)
         return ToolResult(
             success=True,
             data={
                 "id": result.id,
-                "status": (
-                    getattr(result.status, "value", str(result.status)) if hasattr(result, "status") else "unknown"
-                ),
-                "model_url": (result.model_urls.glb if (hasattr(result, "model_urls") and result.model_urls) else None),
-                "thumbnail_url": getattr(result, "thumbnail_url", None),
+                **fields,
             },
             task_id=result.id,
         ).to_json()
