@@ -179,8 +179,19 @@ addopts = [
 
 [tool.coverage.run]
 omit = [
-    # AI sub-package requires optional dependencies (langchain, langgraph)
-    "src/vendor_connectors/ai/*",
+    # Provider implementations require optional dependencies (crewai, mcp, langchain)
+    # Core types (base.py), tools, and registry are tested without optional deps
+    "src/vendor_connectors/ai/providers/crewai/provider.py",
+    "src/vendor_connectors/ai/providers/mcp/provider.py",
+    "src/vendor_connectors/ai/providers/mcp/__main__.py",
+    # LangChain-based providers require optional AI deps
+    "src/vendor_connectors/ai/providers/anthropic.py",
+    "src/vendor_connectors/ai/providers/google.py",
+    "src/vendor_connectors/ai/providers/openai.py",
+    "src/vendor_connectors/ai/providers/ollama.py",
+    "src/vendor_connectors/ai/providers/xai.py",
+    "src/vendor_connectors/ai/connector.py",
+    "src/vendor_connectors/ai/workflows/*",
 ]
 
 [tool.coverage.report]
