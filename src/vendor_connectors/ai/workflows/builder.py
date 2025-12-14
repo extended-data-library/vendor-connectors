@@ -20,14 +20,92 @@ class WorkflowBuilder:
     Provides a fluent interface for constructing workflows with
     vendor connector tools.
 
-    Example:
+    Thread Safety:
+        WorkflowBuilder is NOT thread-safe. Each workflow should be built
+        in a single thread. Once built, the resulting StateGraph can be
+        used across threads.
+
+    Example - Basic Workflow:
+        >>> from vendor_connectors.ai.workflows import WorkflowBuilder
+        >>> 
+        >>> def fetch_data(state):
+        ...     state["data"] = {"result": "fetched"}
+        ...     return state
+        >>> 
+        >>> def process_data(state):
+        ...     state["processed"] = True
+        ...     return state
+        >>> 
         >>> builder = WorkflowBuilder()
         >>> workflow = (
         ...     builder
         ...     .add_node("fetch", fetch_data)
         ...     .add_node("process", process_data)
         ...     .add_edge("fetch", "process")
+        ...     .add_edge("process", "END")
         ...     .set_entry("fetch")
+        ...     .build()
+        ... )
+        >>> result = workflow.invoke({"messages": [], "data": {}})
+
+    Example - Workflow with AI Tools:
+        >>> from vendor_connectors.ai import AIConnector, ToolCategory
+        >>> from vendor_connectors.ai.workflows import WorkflowBuilder
+        >>> from vendor_connectors.github import GithubConnector
+        >>> 
+        >>> # Set up AI connector with tools
+        >>> ai = AIConnector(provider="anthropic")
+        >>> github = GithubConnector()
+        >>> ai.register_connector_tools(github, ToolCategory.GITHUB)
+        >>> 
+        >>> def analyze_repo(state):
+        ...     # AI can call GitHub tools automatically
+        ...     response = ai.invoke(
+        ...         "List all repositories and summarize their languages",
+        ...         use_tools=True
+        ...     )
+        ...     state["analysis"] = response.content
+        ...     return state
+        >>> 
+        >>> def format_report(state):
+        ...     state["report"] = f"Analysis: {state['analysis']}"
+        ...     return state
+        >>> 
+        >>> workflow = (
+        ...     WorkflowBuilder()
+        ...     .add_node("analyze", analyze_repo)
+        ...     .add_node("format", format_report)
+        ...     .add_edge("analyze", "format")
+        ...     .add_edge("format", "END")
+        ...     .set_entry("analyze")
+        ...     .build()
+        ... )
+
+    Example - Conditional Workflow:
+        >>> def check_status(state):
+        ...     # Return "success" or "failure"
+        ...     return "success" if state.get("passed") else "failure"
+        >>> 
+        >>> def handle_success(state):
+        ...     state["message"] = "All checks passed!"
+        ...     return state
+        >>> 
+        >>> def handle_failure(state):
+        ...     state["message"] = "Checks failed"
+        ...     return state
+        >>> 
+        >>> workflow = (
+        ...     WorkflowBuilder()
+        ...     .add_node("check", lambda s: s)
+        ...     .add_node("success", handle_success)
+        ...     .add_node("failure", handle_failure)
+        ...     .add_conditional_edge("check", check_status, {
+        ...         "success": "success",
+        ...         "failure": "failure"
+        ...     })
+        ...     .add_edge("success", "END")
+        ...     .add_edge("failure", "END")
+        ...     .set_entry("check")
         ...     .build()
         ... )
     """

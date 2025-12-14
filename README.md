@@ -4,8 +4,15 @@ Universal vendor connectors for the jbcom ecosystem, providing standardized acce
 
 ## Features
 
-### AI/Agent Connectors (NEW)
-- **Anthropic Connector**: Claude AI API wrapper with message generation, token counting, and model management
+### AI Sub-Package (NEW)
+- **Unified AI Interface**: Single API for multiple AI providers (Anthropic Claude, OpenAI GPT, Google Gemini, xAI Grok, Ollama)
+- **Tool Integration**: Auto-generate LangChain tools from any vendor connector
+- **Workflow Builder**: Create LangGraph workflows with simple DSL
+- **ReAct Agents**: Built-in agent pattern with automatic tool calling
+- **Multi-Provider**: Switch AI providers without changing code
+
+### AI/Agent Connectors
+- **Anthropic Connector**: Direct Claude AI API wrapper with message generation, token counting, and model management
 - **Cursor Connector**: Cursor Background Agent API for AI coding agent management
 
 ### Cloud Providers
@@ -31,6 +38,17 @@ pip install vendor-connectors
 ### Optional Extras
 
 ```bash
+# For AI sub-package (unified AI interface)
+pip install vendor-connectors[ai]
+
+# For specific AI providers
+pip install vendor-connectors[ai-anthropic]   # Claude
+pip install vendor-connectors[ai-openai]      # GPT
+pip install vendor-connectors[ai-google]      # Gemini
+pip install vendor-connectors[ai-xai]         # Grok
+pip install vendor-connectors[ai-ollama]      # Local models
+pip install vendor-connectors[ai-all]         # All providers
+
 # For Meshy webhooks
 pip install vendor-connectors[webhooks]
 
@@ -160,6 +178,79 @@ repos = cursor.list_repositories()
 ```
 
 **API Reference:** https://docs.cursor.com/account/api
+
+### AI Sub-Package (Unified AI Interface)
+
+The AI sub-package provides a unified interface across multiple AI providers with automatic tool generation from vendor connectors.
+
+```python
+from vendor_connectors.ai import AIConnector, ToolCategory
+from vendor_connectors.github import GithubConnector
+
+# Initialize AI connector (supports: anthropic, openai, google, xai, ollama)
+ai = AIConnector(
+    provider="anthropic",
+    model="claude-sonnet-4-5-20250929",
+    temperature=0.7
+)
+
+# Simple chat
+response = ai.chat("Explain quantum computing in simple terms")
+print(response.content)
+print(f"Tokens used: {response.total_tokens}")
+
+# Register tools from a connector
+github = GithubConnector()
+ai.register_connector_tools(github, ToolCategory.GITHUB)
+
+# AI can now call GitHub tools automatically
+response = ai.invoke(
+    "List all repositories in jbdevprimary organization and tell me which ones have CI failures",
+    use_tools=True
+)
+print(response.content)
+```
+
+**Multi-Provider Support:**
+```python
+# Switch providers by changing one parameter
+ai_claude = AIConnector(provider="anthropic", model="claude-sonnet-4-5-20250929")
+ai_gpt = AIConnector(provider="openai", model="gpt-4o")
+ai_local = AIConnector(provider="ollama", model="llama3.2")
+
+# Same API for all providers
+for ai in [ai_claude, ai_gpt, ai_local]:
+    response = ai.chat("What is the capital of France?")
+    print(f"{ai.provider.name}: {response.content}")
+```
+
+**Workflow Builder (LangGraph Integration):**
+```python
+from vendor_connectors.ai.workflows import WorkflowBuilder
+
+def analyze_code(state):
+    response = ai.invoke("Review this code for bugs", use_tools=True)
+    state["analysis"] = response.content
+    return state
+
+def decide_action(state):
+    return "create_issue" if "bug" in state["analysis"].lower() else "done"
+
+workflow = (
+    WorkflowBuilder()
+    .add_node("analyze", analyze_code)
+    .add_conditional_edge("analyze", decide_action, {
+        "create_issue": "create_issue",
+        "done": "END"
+    })
+    .set_entry("analyze")
+    .build()
+)
+
+result = workflow.invoke({"code": "..."})
+```
+
+**See also:** [Migration Guide from Anthropic Connector](docs/development/migration-anthropic-to-ai.md)
 
 ### Meshy AI (3D Asset Generation)
 

@@ -18,7 +18,17 @@ __all__ = ["ToolFactory", "create_tool", "tool_from_method"]
 
 
 def _python_type_to_json_type(py_type: type) -> str:
-    """Convert Python type to JSON Schema type string."""
+    """Convert Python type to JSON Schema type string.
+    
+    Handles basic types (str, int, float, bool, list, dict) and
+    generic types like Optional[X] and Union[X, None].
+    
+    Args:
+        py_type: Python type to convert.
+        
+    Returns:
+        JSON Schema type string ("string", "integer", etc.).
+    """
     type_map = {
         str: "string",
         int: "integer",
@@ -27,13 +37,18 @@ def _python_type_to_json_type(py_type: type) -> str:
         list: "array",
         dict: "object",
     }
-    # Handle Optional, Union, etc.
+    
+    # Handle Optional, Union, and other generic types
+    # For typing.Optional[X] (which is Union[X, None]), extract X
     origin = getattr(py_type, "__origin__", None)
     if origin is not None:
-        # For X | None, get the inner type
+        # Get the type arguments (e.g., for Optional[str], args would be (str, NoneType))
         args = getattr(py_type, "__args__", ())
         if args:
+            # Use the first type argument, ignoring None
             return _python_type_to_json_type(args[0])
+    
+    # Return mapped type or default to string
     return type_map.get(py_type, "string")
 
 
@@ -80,25 +95,32 @@ def tool_from_method(
     parameters: dict[str, ToolParameter] = {}
 
     for param_name, param in sig.parameters.items():
-        # Skip self, cls, and **kwargs
+        # Skip self, cls, and **kwargs (variable keyword arguments)
+        # These are not exposed as tool parameters to AI agents
         if param_name in ("self", "cls") or param.kind == inspect.Parameter.VAR_KEYWORD:
             continue
 
+        # Get type hint, default to str if not specified
         param_type = hints.get(param_name, str)
-        # Handle Optional types
+        
+        # Handle Optional and Union types
+        # Optional[X] is actually Union[X, None], so we need to extract X
         if hasattr(param_type, "__origin__"):
             origin = getattr(param_type, "__origin__", None)
-            # Check for Union (Optional is Union[X, None])
+            # Check if it's a Union type (includes Optional)
             if origin is type(None) or str(origin) == "typing.Union":
                 args = getattr(param_type, "__args__", ())
                 if args:
+                    # Use the first non-None type
                     param_type = args[0]
 
+        # Parameter is required if it has no default value
         is_required = param.default == inspect.Parameter.empty
 
+        # Create ToolParameter with extracted information
         parameters[param_name] = ToolParameter(
             name=param_name,
-            description=f"Parameter: {param_name}",
+            description=f"Parameter: {param_name}",  # Basic description, could be enhanced with docstring parsing
             type=param_type if isinstance(param_type, type) else str,
             required=is_required,
             default=None if param.default == inspect.Parameter.empty else param.default,

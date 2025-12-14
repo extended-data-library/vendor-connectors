@@ -4,9 +4,12 @@
 
 This document outlines the design for the `vendor_connectors.ai` sub-package, which provides a unified AI interface leveraging LangChain/LangGraph for multi-provider AI access and tool abstraction.
 
-**Status**: Pre-implementation design (blocked by PR #16)
+**Status**: ✅ IMPLEMENTED (as of 2025-12-07)
 **Epic**: jbcom/jbcom-control-center#340
-**Blocks**: PR #18 (Meshy), jbcom/jbcom-control-center#342 (agentic-crew)
+
+> **Note**: This document contains design examples and pseudocode to illustrate the architecture.
+> For actual implementation details, see the source code in `src/vendor_connectors/ai/`.
+> Code snippets in this document may differ from the actual implementation.
 
 ## Design Goals
 
@@ -262,14 +265,22 @@ class BaseLLMProvider(ABC):
         history: Optional[list[AIMessage]] = None,
         tools: Optional[list] = None,
     ) -> AIResponse:
-        """Execute a chat completion."""
-        from langchain_core.messages import HumanMessage, SystemMessage
+        """Execute a chat completion.
+        
+        Note: See actual implementation in ai/providers/base.py.
+        History conversion and response conversion are implemented inline."""
+        from langchain_core.messages import HumanMessage, SystemMessage, AIMessage as LCAIMessage
         
         messages = []
         if system_prompt:
             messages.append(SystemMessage(content=system_prompt))
         if history:
-            messages.extend(self._convert_history(history))
+            # Convert AIMessage objects to LangChain messages
+            for msg in history:
+                if msg.role.value == "user":
+                    messages.append(HumanMessage(content=msg.content))
+                elif msg.role.value == "assistant":
+                    messages.append(LCAIMessage(content=msg.content))
         messages.append(HumanMessage(content=message))
         
         llm = self._llm
@@ -277,6 +288,7 @@ class BaseLLMProvider(ABC):
             llm = llm.bind_tools(tools)
         
         response = llm.invoke(messages)
+        # Response conversion to AIResponse happens in _convert_response()
         return self._convert_response(response)
     
     def invoke_with_tools(
@@ -285,13 +297,19 @@ class BaseLLMProvider(ABC):
         tools: list,
         max_iterations: int = 10,
     ) -> AIResponse:
-        """Execute chat with tool calling loop."""
+        """Execute chat with tool calling loop.
+        
+        Note: See actual implementation in ai/providers/base.py."""
         from langgraph.prebuilt import create_react_agent
         
         agent = create_react_agent(self._llm, tools)
         result = agent.invoke({"messages": [("user", message)]})
         
-        return self._convert_agent_response(result)
+        # Extract final message from agent result
+        final_messages = result.get("messages", [])
+        if final_messages:
+            return self._convert_response(final_messages[-1])
+        return AIResponse(content="", model=self.model, provider=self.provider_name)
 ```
 
 ### 4. Tool Factory (`ai/tools/factory.py`)
@@ -343,8 +361,8 @@ def create_tool_from_method(
         annotation = param.annotation if param.annotation != inspect.Parameter.empty else str
         default = ... if param.default == inspect.Parameter.empty else param.default
         
-        # Extract param description from docstring
-        param_desc = _extract_param_description(docstring, param_name)
+        # Extract param description from docstring (simple approach)
+        param_desc = f"Parameter: {param_name}"
         
         fields[param_name] = (annotation, Field(default=default, description=param_desc))
     
@@ -358,12 +376,19 @@ def create_tool_from_method(
     def tool_func(**kwargs) -> str:
         connector = connector_class()  # Uses environment defaults
         result = getattr(connector, method_name)(**kwargs)
-        return _serialize_result(result)
+        # Serialize result - convert to string representation
+        return str(result) if result is not None else ""
+    
+    # Extract method description from first line of docstring
+    method_desc = description
+    if not method_desc and docstring:
+        lines = docstring.strip().split("\n\n")[0].split("\n")
+        method_desc = " ".join(line.strip() for line in lines)
     
     return StructuredTool.from_function(
         func=tool_func,
         name=f"{connector_class.__name__.lower()}_{method_name}",
-        description=description or _extract_method_description(docstring),
+        description=method_desc or f"Execute {method_name}",
         args_schema=InputModel,
     )
 
@@ -512,9 +537,12 @@ def get_all_tools(
         tools.extend(_tool_registry.get(cat, []))
     
     if include_meshy:
-        from vendor_connectors.meshy.agent_tools import get_tool_definitions
-        # Convert meshy tools to LangChain format
-        tools.extend(_convert_meshy_tools(get_tool_definitions()))
+        # Meshy tools are already in LangChain StructuredTool format
+        try:
+            from vendor_connectors.meshy.tools import get_tools as get_meshy_tools
+            tools.extend(get_meshy_tools())
+        except ImportError:
+            pass  # Meshy extras not installed
     
     return tools
 ```

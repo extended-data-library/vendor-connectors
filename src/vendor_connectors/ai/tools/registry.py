@@ -23,10 +23,52 @@ class ToolRegistry:
     The registry also stores connector instances to enable proper method binding
     when tools are invoked from workflow nodes.
 
-    Example:
-        >>> registry = ToolRegistry()
-        >>> registry.register(my_tool_definition)
-        >>> tools = registry.get_tools(categories=[ToolCategory.AWS])
+    Thread Safety:
+        This class uses a singleton pattern (get_instance()). The registry is
+        NOT thread-safe for write operations (register, unregister, clear,
+        register_instance). All tool registration should happen during
+        initialization in a single thread.
+        
+        Read operations (get, get_tools, list_names, list_categories,
+        get_connector_instance, __len__, __contains__) are thread-safe once
+        initialization is complete, as they only read from internal dictionaries
+        which are not modified during normal operation.
+
+    Example - Basic Usage:
+        >>> from vendor_connectors.ai.tools.registry import ToolRegistry
+        >>> from vendor_connectors.ai.tools.factory import create_tool
+        >>> from vendor_connectors.ai.base import ToolCategory
+        >>> 
+        >>> registry = ToolRegistry.get_instance()
+        >>> 
+        >>> # Register a tool
+        >>> my_tool = create_tool(
+        ...     name="example_tool",
+        ...     description="An example tool",
+        ...     handler=lambda x: f"Processed: {x}",
+        ...     category=ToolCategory.AWS
+        ... )
+        >>> registry.register(my_tool)
+        >>> 
+        >>> # Query tools
+        >>> aws_tools = registry.get_tools(categories=[ToolCategory.AWS])
+        >>> print(len(aws_tools))
+
+    Example - With AIConnector:
+        >>> from vendor_connectors.ai import AIConnector, ToolCategory
+        >>> from vendor_connectors.github import GithubConnector
+        >>> 
+        >>> # AIConnector uses the singleton registry internally
+        >>> ai = AIConnector(provider="anthropic")
+        >>> github = GithubConnector()
+        >>> 
+        >>> # This registers tools in the singleton registry
+        >>> ai.register_connector_tools(github, ToolCategory.GITHUB)
+        >>> 
+        >>> # You can access the registry directly if needed
+        >>> registry = ToolRegistry.get_instance()
+        >>> print(f"Total tools: {len(registry)}")
+        >>> print(f"GitHub tools: {registry.list_names(ToolCategory.GITHUB)}")
     """
 
     _instance: ToolRegistry | None = None

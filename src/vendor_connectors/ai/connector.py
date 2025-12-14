@@ -25,14 +25,49 @@ class AIConnector:
     Provides a consistent API across all supported AI providers,
     with automatic tool registration and LangGraph workflow support.
 
-    Example:
+    Thread Safety:
+        AIConnector instances are NOT thread-safe during tool registration.
+        Tool registration (register_connector_tools, register_tool) should
+        be done in a single thread during initialization. Once tools are
+        registered, chat() and invoke() methods can be called from multiple
+        threads as they delegate to thread-safe LangChain components.
+
+        The underlying ToolRegistry uses a singleton pattern and should be
+        considered thread-safe for read operations after initialization.
+
+    Example - Basic Chat:
         >>> connector = AIConnector(provider="anthropic")
         >>> response = connector.chat("Hello!")
         >>> print(response.content)
 
-        # With tools
-        >>> connector.register_connector_tools(my_github_connector, ToolCategory.GITHUB)
-        >>> response = connector.invoke("List my repos", use_tools=True)
+    Example - Chat with Tools:
+        >>> from vendor_connectors.github import GithubConnector
+        >>> 
+        >>> connector = AIConnector(provider="anthropic")
+        >>> github = GithubConnector()
+        >>> connector.register_connector_tools(github, ToolCategory.GITHUB)
+        >>> 
+        >>> response = connector.invoke(
+        ...     "List my repos and create an issue for the first one",
+        ...     use_tools=True
+        ... )
+        >>> print(response.content)
+
+    Example - Multiple Connectors:
+        >>> from vendor_connectors.github import GithubConnector
+        >>> from vendor_connectors.slack import SlackConnector
+        >>> 
+        >>> ai = AIConnector(provider="openai", model="gpt-4o")
+        >>> 
+        >>> # Register multiple connector types
+        >>> ai.register_connector_tools(GithubConnector(), ToolCategory.GITHUB)
+        >>> ai.register_connector_tools(SlackConnector(), ToolCategory.SLACK)
+        >>> 
+        >>> # AI can now use both GitHub and Slack tools
+        >>> response = ai.invoke(
+        ...     "Check CI status on vendor-connectors repo and post to #dev",
+        ...     use_tools=True
+        ... )
     """
 
     def __init__(
