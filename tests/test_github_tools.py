@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Patch target for GithubConnector - patch where it's defined, not where it's used
+# Patch target for GithubConnector - patch at source since tools.py imports lazily inside functions
 GITHUB_CONNECTOR_PATCH = "vendor_connectors.github.GithubConnector"
 
 
@@ -111,7 +111,7 @@ class TestGetRepository:
 
         result = get_repository(github_owner="test-org", github_token="test-token", repo_name="test-repo")
 
-        assert result is not None
+        assert result["status"] == "found"
         assert result["name"] == "test-repo"
         assert result["full_name"] == "org/test-repo"
 
@@ -126,7 +126,8 @@ class TestGetRepository:
 
         result = get_repository(github_owner="test-org", github_token="test-token", repo_name="nonexistent")
 
-        assert result is None
+        assert result["status"] == "not_found"
+        assert result["name"] == "nonexistent"
 
 
 class TestListTeams:
@@ -203,7 +204,7 @@ class TestGetTeam:
 
         result = get_team(github_owner="test-org", github_token="test-token", team_slug="test-team")
 
-        assert result is not None
+        assert result["status"] == "found"
         assert result["slug"] == "test-team"
         assert result["name"] == "Test Team"
 
@@ -218,7 +219,8 @@ class TestGetTeam:
 
         result = get_team(github_owner="test-org", github_token="test-token", team_slug="nonexistent")
 
-        assert result is None
+        assert result["status"] == "not_found"
+        assert result["slug"] == "nonexistent"
 
 
 class TestListOrgMembers:

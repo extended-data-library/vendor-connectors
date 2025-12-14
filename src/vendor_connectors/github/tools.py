@@ -56,19 +56,21 @@ def list_repositories(
     # Convert dict to list
     result = []
     for name, data in repos.items():
-        result.append(
-            {
-                "name": name,
-                "full_name": data.get("full_name", ""),
-                "description": data.get("description", ""),
-                "private": data.get("private", False),
-                "archived": data.get("archived", False),
-                "default_branch": data.get("default_branch", ""),
-                "html_url": data.get("html_url", ""),
-                "language": data.get("language", ""),
-                "topics": data.get("topics", []),
-            }
-        )
+        repo_info = {
+            "name": name,
+            "full_name": data.get("full_name", ""),
+            "description": data.get("description", ""),
+            "private": data.get("private", False),
+            "archived": data.get("archived", False),
+            "default_branch": data.get("default_branch", ""),
+            "html_url": data.get("html_url", ""),
+            "language": data.get("language", ""),
+            "topics": data.get("topics", []),
+        }
+        # Include branch data when available
+        if include_branches and "branches" in data:
+            repo_info["branches"] = data.get("branches", [])
+        result.append(repo_info)
 
     return result
 
@@ -77,7 +79,7 @@ def get_repository(
     github_owner: str,
     github_token: str,
     repo_name: str,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any]:
     """Get a specific repository details.
 
     Args:
@@ -86,14 +88,32 @@ def get_repository(
         repo_name: Repository name
 
     Returns:
-        Repository information or None if not found
+        Repository information with status field
     """
     from vendor_connectors.github import GithubConnector
 
     connector = GithubConnector(github_owner=github_owner, github_token=github_token)
     repo = connector.get_repository(repo_name)
 
-    return repo
+    if repo is None:
+        return {
+            "name": repo_name,
+            "status": "not_found",
+        }
+
+    return {
+        "name": repo.get("name", repo_name),
+        "full_name": repo.get("full_name", ""),
+        "description": repo.get("description", ""),
+        "private": repo.get("private", False),
+        "archived": repo.get("archived", False),
+        "default_branch": repo.get("default_branch", ""),
+        "html_url": repo.get("html_url", ""),
+        "clone_url": repo.get("clone_url", ""),
+        "language": repo.get("language", ""),
+        "topics": repo.get("topics", []),
+        "status": "found",
+    }
 
 
 def list_teams(
@@ -141,7 +161,7 @@ def get_team(
     github_owner: str,
     github_token: str,
     team_slug: str,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any]:
     """Get a specific team details.
 
     Args:
@@ -150,14 +170,30 @@ def get_team(
         team_slug: Team slug
 
     Returns:
-        Team information or None if not found
+        Team information with status field
     """
     from vendor_connectors.github import GithubConnector
 
     connector = GithubConnector(github_owner=github_owner, github_token=github_token)
     team = connector.get_team(team_slug)
 
-    return team
+    if team is None:
+        return {
+            "slug": team_slug,
+            "status": "not_found",
+        }
+
+    return {
+        "slug": team.get("slug", team_slug),
+        "name": team.get("name", ""),
+        "description": team.get("description", ""),
+        "privacy": team.get("privacy", ""),
+        "permission": team.get("permission", ""),
+        "html_url": team.get("html_url", ""),
+        "members_count": team.get("members_count", 0),
+        "repos_count": team.get("repos_count", 0),
+        "status": "found",
+    }
 
 
 def list_org_members(
