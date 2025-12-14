@@ -222,7 +222,7 @@ class TestS3ObjectOperations:
         mock_s3.put_object.return_value = {"ETag": "abc123"}
         aws_connector.get_aws_client = MagicMock(return_value=mock_s3)
 
-        _result = aws_connector.put_object("bucket", "key.bin", b"binary data")
+        aws_connector.put_object("bucket", "key.bin", b"binary data")
 
         call_args = mock_s3.put_object.call_args[1]
         assert call_args["Body"] == b"binary data"

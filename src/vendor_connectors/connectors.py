@@ -9,20 +9,23 @@ from directed_inputs_class import DirectedInputsClass
 from extended_data_types import get_default_dict, get_unique_signature, make_hashable
 from lifecyclelogging import Logging
 
-from vendor_connectors.anthropic import AnthropicConnector
-from vendor_connectors.aws import AWSConnector
-from vendor_connectors.cursor import CursorConnector
-from vendor_connectors.github import GithubConnector
-from vendor_connectors.google import GoogleConnector
-from vendor_connectors.slack import SlackConnector
-from vendor_connectors.vault import VaultConnector
+# Import zoom directly (no extra deps)
 from vendor_connectors.zoom import ZoomConnector
+
+# Optional connectors - imported lazily when methods are called
+# This allows the package to be imported without all vendor SDKs installed
 
 if TYPE_CHECKING:
     import boto3
     import hvac
     from boto3.resources.base import ServiceResource
     from botocore.config import Config
+
+    from vendor_connectors.aws import AWSConnector
+    from vendor_connectors.github import GithubConnector
+    from vendor_connectors.google import GoogleConnector
+    from vendor_connectors.slack import SlackConnector
+    from vendor_connectors.vault import VaultConnector
 
 
 class VendorConnectors(DirectedInputsClass):
@@ -36,6 +39,13 @@ class VendorConnectors(DirectedInputsClass):
         slack = vc.get_slack_client(token="...", bot_token="...")
         github = vc.get_github_client(github_owner="org", github_token="...")
         aws_client = vc.get_aws_client("s3")
+
+    For Meshy AI, use the functional interface directly:
+        from vendor_connectors.meshy import text3d, image3d, rigging, animate
+        model = text3d.generate("a medieval sword")
+
+    Meshy does not provide a `get_meshy_client()` method because it uses a functional interface
+    rather than a connector class, in order to simplify async operations and usage.
     """
 
     def __init__(
@@ -73,7 +83,15 @@ class VendorConnectors(DirectedInputsClass):
         self,
         execution_role_arn: Optional[str] = None,
     ) -> AWSConnector:
-        """Get a cached AWSConnector instance."""
+        """Get a cached AWSConnector instance.
+
+        Requires: pip install vendor-connectors[aws]
+        """
+        try:
+            from vendor_connectors.aws import AWSConnector
+        except ImportError as e:
+            raise ImportError("AWS connector requires boto3. Install with: pip install vendor-connectors[aws]") from e
+
         execution_role_arn = execution_role_arn or self.get_input("EXECUTION_ROLE_ARN", required=False)
 
         cached = self._get_cached_client("aws_connector", execution_role_arn=execution_role_arn)
@@ -205,7 +223,17 @@ class VendorConnectors(DirectedInputsClass):
         github_branch: Optional[str] = None,
         github_token: Optional[str] = None,
     ) -> GithubConnector:
-        """Get a cached GithubConnector instance."""
+        """Get a cached GithubConnector instance.
+
+        Requires: pip install vendor-connectors[github]
+        """
+        try:
+            from vendor_connectors.github import GithubConnector
+        except ImportError as e:
+            raise ImportError(
+                "GitHub connector requires PyGithub. Install with: pip install vendor-connectors[github]"
+            ) from e
+
         github_owner = github_owner or self.get_input("GITHUB_OWNER", required=True)
         github_repo = github_repo or self.get_input("GITHUB_REPO", required=False)
         github_branch = github_branch or self.get_input("GITHUB_BRANCH", required=False)
@@ -249,7 +277,18 @@ class VendorConnectors(DirectedInputsClass):
         scopes: Optional[list[str]] = None,
         subject: Optional[str] = None,
     ) -> GoogleConnector:
-        """Get a cached GoogleConnector instance."""
+        """Get a cached GoogleConnector instance.
+
+        Requires: pip install vendor-connectors[google]
+        """
+        try:
+            from vendor_connectors.google import GoogleConnector
+        except ImportError as e:
+            raise ImportError(
+                "Google connector requires google-api-python-client. "
+                "Install with: pip install vendor-connectors[google]"
+            ) from e
+
         service_account_info = service_account_info or self.get_input("GOOGLE_SERVICE_ACCOUNT", required=True)
 
         # For caching, use a hash to avoid exposing sensitive data
@@ -287,7 +326,17 @@ class VendorConnectors(DirectedInputsClass):
         token: Optional[str] = None,
         bot_token: Optional[str] = None,
     ) -> SlackConnector:
-        """Get a cached SlackConnector instance."""
+        """Get a cached SlackConnector instance.
+
+        Requires: pip install vendor-connectors[slack]
+        """
+        try:
+            from vendor_connectors.slack import SlackConnector
+        except ImportError as e:
+            raise ImportError(
+                "Slack connector requires slack_sdk. Install with: pip install vendor-connectors[slack]"
+            ) from e
+
         token = token or self.get_input("SLACK_TOKEN", required=True)
         bot_token = bot_token or self.get_input("SLACK_BOT_TOKEN", required=True)
 
@@ -314,7 +363,17 @@ class VendorConnectors(DirectedInputsClass):
         vault_namespace: Optional[str] = None,
         vault_token: Optional[str] = None,
     ) -> hvac.Client:
-        """Get a cached Vault hvac.Client instance."""
+        """Get a cached Vault hvac.Client instance.
+
+        Requires: pip install vendor-connectors[vault]
+        """
+        try:
+            from vendor_connectors.vault import VaultConnector
+        except ImportError as e:
+            raise ImportError(
+                "Vault connector requires hvac. Install with: pip install vendor-connectors[vault]"
+            ) from e
+
         vault_url = vault_url or self.get_input("VAULT_ADDR", required=False)
         vault_namespace = vault_namespace or self.get_input("VAULT_NAMESPACE", required=False)
         vault_token = vault_token or self.get_input("VAULT_TOKEN", required=False)
@@ -351,7 +410,17 @@ class VendorConnectors(DirectedInputsClass):
         vault_namespace: Optional[str] = None,
         vault_token: Optional[str] = None,
     ) -> VaultConnector:
-        """Get a cached VaultConnector instance."""
+        """Get a cached VaultConnector instance.
+
+        Requires: pip install vendor-connectors[vault]
+        """
+        try:
+            from vendor_connectors.vault import VaultConnector
+        except ImportError as e:
+            raise ImportError(
+                "Vault connector requires hvac. Install with: pip install vendor-connectors[vault]"
+            ) from e
+
         vault_url = vault_url or self.get_input("VAULT_ADDR", required=False)
         vault_namespace = vault_namespace or self.get_input("VAULT_NAMESPACE", required=False)
         vault_token = vault_token or self.get_input("VAULT_TOKEN", required=False)
@@ -418,100 +487,5 @@ class VendorConnectors(DirectedInputsClass):
             client_id=client_id,
             client_secret=client_secret,
             account_id=account_id,
-        )
-        return connector
-
-    # -------------------------------------------------------------------------
-    # Cursor (AI Agent Management)
-    # -------------------------------------------------------------------------
-
-    def get_cursor_client(
-        self,
-        api_key: Optional[str] = None,
-        timeout: float = 60.0,
-    ) -> CursorConnector:
-        """Get a cached CursorConnector instance.
-
-        Args:
-            api_key: Cursor API key. Defaults to CURSOR_API_KEY env var.
-            timeout: Request timeout in seconds.
-
-        Returns:
-            CursorConnector instance for managing Cursor background agents.
-        """
-        api_key = api_key or self.get_input("CURSOR_API_KEY", required=False)
-
-        # Use hash of API key for cache key to avoid storing sensitive data
-        cache_key = hashlib.sha256((api_key or "").encode()).hexdigest()[:16] if api_key else None
-
-        cached = self._get_cached_client(
-            "cursor",
-            api_key_hash=cache_key,
-            timeout=timeout,
-        )
-        if cached:
-            return cached
-
-        connector = CursorConnector(
-            api_key=api_key,
-            timeout=timeout,
-            logger=self.logging,
-            inputs=self.inputs,
-        )
-        self._set_cached_client(
-            "cursor",
-            connector,
-            api_key_hash=cache_key,
-            timeout=timeout,
-        )
-        return connector
-
-    # -------------------------------------------------------------------------
-    # Anthropic (Claude AI)
-    # -------------------------------------------------------------------------
-
-    def get_anthropic_client(
-        self,
-        api_key: Optional[str] = None,
-        api_version: str = "2023-06-01",
-        timeout: float = 60.0,
-    ) -> AnthropicConnector:
-        """Get a cached AnthropicConnector instance.
-
-        Args:
-            api_key: Anthropic API key. Defaults to ANTHROPIC_API_KEY env var.
-            api_version: API version string.
-            timeout: Request timeout in seconds.
-
-        Returns:
-            AnthropicConnector instance for Claude AI interactions.
-        """
-        api_key = api_key or self.get_input("ANTHROPIC_API_KEY", required=False)
-
-        # Use hash of API key for cache key to avoid storing sensitive data
-        cache_key = hashlib.sha256((api_key or "").encode()).hexdigest()[:16] if api_key else None
-
-        cached = self._get_cached_client(
-            "anthropic",
-            api_key_hash=cache_key,
-            api_version=api_version,
-            timeout=timeout,
-        )
-        if cached:
-            return cached
-
-        connector = AnthropicConnector(
-            api_key=api_key,
-            api_version=api_version,
-            timeout=timeout,
-            logger=self.logging,
-            inputs=self.inputs,
-        )
-        self._set_cached_client(
-            "anthropic",
-            connector,
-            api_key_hash=cache_key,
-            api_version=api_version,
-            timeout=timeout,
         )
         return connector
