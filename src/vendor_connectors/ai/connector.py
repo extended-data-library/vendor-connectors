@@ -42,11 +42,11 @@ class AIConnector:
 
     Example - Chat with Tools:
         >>> from vendor_connectors.github import GithubConnector
-        >>> 
+        >>>
         >>> connector = AIConnector(provider="anthropic")
         >>> github = GithubConnector()
         >>> connector.register_connector_tools(github, ToolCategory.GITHUB)
-        >>> 
+        >>>
         >>> response = connector.invoke(
         ...     "List my repos and create an issue for the first one",
         ...     use_tools=True
@@ -56,13 +56,13 @@ class AIConnector:
     Example - Multiple Connectors:
         >>> from vendor_connectors.github import GithubConnector
         >>> from vendor_connectors.slack import SlackConnector
-        >>> 
+        >>>
         >>> ai = AIConnector(provider="openai", model="gpt-4o")
-        >>> 
+        >>>
         >>> # Register multiple connector types
         >>> ai.register_connector_tools(GithubConnector(), ToolCategory.GITHUB)
         >>> ai.register_connector_tools(SlackConnector(), ToolCategory.SLACK)
-        >>> 
+        >>>
         >>> # AI can now use both GitHub and Slack tools
         >>> response = ai.invoke(
         ...     "Check CI status on vendor-connectors repo and post to #dev",

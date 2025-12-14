@@ -27,15 +27,15 @@ class WorkflowBuilder:
 
     Example - Basic Workflow:
         >>> from vendor_connectors.ai.workflows import WorkflowBuilder
-        >>> 
+        >>>
         >>> def fetch_data(state):
         ...     state["data"] = {"result": "fetched"}
         ...     return state
-        >>> 
+        >>>
         >>> def process_data(state):
         ...     state["processed"] = True
         ...     return state
-        >>> 
+        >>>
         >>> builder = WorkflowBuilder()
         >>> workflow = (
         ...     builder
@@ -52,12 +52,12 @@ class WorkflowBuilder:
         >>> from vendor_connectors.ai import AIConnector, ToolCategory
         >>> from vendor_connectors.ai.workflows import WorkflowBuilder
         >>> from vendor_connectors.github import GithubConnector
-        >>> 
+        >>>
         >>> # Set up AI connector with tools
         >>> ai = AIConnector(provider="anthropic")
         >>> github = GithubConnector()
         >>> ai.register_connector_tools(github, ToolCategory.GITHUB)
-        >>> 
+        >>>
         >>> def analyze_repo(state):
         ...     # AI can call GitHub tools automatically
         ...     response = ai.invoke(
@@ -66,11 +66,11 @@ class WorkflowBuilder:
         ...     )
         ...     state["analysis"] = response.content
         ...     return state
-        >>> 
+        >>>
         >>> def format_report(state):
         ...     state["report"] = f"Analysis: {state['analysis']}"
         ...     return state
-        >>> 
+        >>>
         >>> workflow = (
         ...     WorkflowBuilder()
         ...     .add_node("analyze", analyze_repo)
@@ -85,15 +85,15 @@ class WorkflowBuilder:
         >>> def check_status(state):
         ...     # Return "success" or "failure"
         ...     return "success" if state.get("passed") else "failure"
-        >>> 
+        >>>
         >>> def handle_success(state):
         ...     state["message"] = "All checks passed!"
         ...     return state
-        >>> 
+        >>>
         >>> def handle_failure(state):
         ...     state["message"] = "Checks failed"
         ...     return state
-        >>> 
+        >>>
         >>> workflow = (
         ...     WorkflowBuilder()
         ...     .add_node("check", lambda s: s)

@@ -19,13 +19,13 @@ __all__ = ["ToolFactory", "create_tool", "tool_from_method"]
 
 def _python_type_to_json_type(py_type: type) -> str:
     """Convert Python type to JSON Schema type string.
-    
+
     Handles basic types (str, int, float, bool, list, dict) and
     generic types like Optional[X] and Union[X, None].
-    
+
     Args:
         py_type: Python type to convert.
-        
+
     Returns:
         JSON Schema type string ("string", "integer", etc.).
     """
@@ -37,7 +37,7 @@ def _python_type_to_json_type(py_type: type) -> str:
         list: "array",
         dict: "object",
     }
-    
+
     # Handle Optional, Union, and other generic types
     # For typing.Optional[X] (which is Union[X, None]), extract X
     origin = getattr(py_type, "__origin__", None)
@@ -47,7 +47,7 @@ def _python_type_to_json_type(py_type: type) -> str:
         if args:
             # Use the first type argument, ignoring None
             return _python_type_to_json_type(args[0])
-    
+
     # Return mapped type or default to string
     return type_map.get(py_type, "string")
 
@@ -102,7 +102,7 @@ def tool_from_method(
 
         # Get type hint, default to str if not specified
         param_type = hints.get(param_name, str)
-        
+
         # Handle Optional and Union types
         # Optional[X] is actually Union[X, None], so we need to extract X
         if hasattr(param_type, "__origin__"):
