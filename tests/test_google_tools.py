@@ -132,7 +132,7 @@ class TestListEnabledServices:
         result = list_enabled_services(project_id="my-project")
 
         assert len(result) == 2
-        assert "compute.googleapis.com" in result[0]["name"]
+        assert result[0]["name"] == "projects/123/services/compute.googleapis.com"
         assert result[0]["title"] == "Compute Engine API"
         assert result[0]["state"] == "ENABLED"
 
