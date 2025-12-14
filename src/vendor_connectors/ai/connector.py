@@ -6,6 +6,7 @@ with AI providers through a unified API.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 from vendor_connectors.ai.base import AIProvider, AIResponse, ToolCategory
@@ -55,8 +56,16 @@ class AIConnector:
             temperature: Sampling temperature (0-1).
             max_tokens: Maximum tokens to generate.
             langsmith_api_key: Optional LangSmith API key for tracing.
+                LangSmith tracing is applied via context manager during
+                chat/invoke calls to avoid global environment pollution.
             langsmith_project: Optional LangSmith project name.
             **kwargs: Additional provider-specific arguments.
+
+        Note:
+            LangSmith configuration is stored but not applied globally.
+            Environment variables are only set temporarily during chat()
+            and invoke() calls using a context manager, ensuring thread-safety
+            and preventing side effects beyond the connector's lifetime.
         """
         # Normalize provider to string
         provider_name = provider.value if isinstance(provider, AIProvider) else provider
@@ -76,20 +85,54 @@ class AIConnector:
         self._factory = ToolFactory()
         self._connector_instances: dict[ToolCategory, Any] = {}
 
-        # LangSmith setup
+        # LangSmith configuration (stored for context-based tracing)
         self._langsmith_api_key = langsmith_api_key
         self._langsmith_project = langsmith_project
-        if langsmith_api_key:
-            self._setup_langsmith()
 
-    def _setup_langsmith(self) -> None:
-        """Configure LangSmith tracing if API key is provided."""
+    @contextmanager
+    def _langsmith_context(self):
+        """Context manager for LangSmith tracing.
+
+        This temporarily sets LangSmith environment variables only during
+        the context, avoiding global environment pollution.
+
+        Yields:
+            None
+        """
         import os
 
-        os.environ["LANGCHAIN_TRACING_V2"] = "true"
-        os.environ["LANGCHAIN_API_KEY"] = self._langsmith_api_key
-        if self._langsmith_project:
-            os.environ["LANGCHAIN_PROJECT"] = self._langsmith_project
+        if not self._langsmith_api_key:
+            yield
+            return
+
+        # Save original values
+        original_tracing = os.environ.get("LANGCHAIN_TRACING_V2")
+        original_api_key = os.environ.get("LANGCHAIN_API_KEY")
+        original_project = os.environ.get("LANGCHAIN_PROJECT")
+
+        try:
+            # Set LangSmith environment variables
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_API_KEY"] = self._langsmith_api_key
+            if self._langsmith_project:
+                os.environ["LANGCHAIN_PROJECT"] = self._langsmith_project
+            yield
+        finally:
+            # Restore original values
+            if original_tracing is None:
+                os.environ.pop("LANGCHAIN_TRACING_V2", None)
+            else:
+                os.environ["LANGCHAIN_TRACING_V2"] = original_tracing
+
+            if original_api_key is None:
+                os.environ.pop("LANGCHAIN_API_KEY", None)
+            else:
+                os.environ["LANGCHAIN_API_KEY"] = original_api_key
+
+            if original_project is None:
+                os.environ.pop("LANGCHAIN_PROJECT", None)
+            else:
+                os.environ["LANGCHAIN_PROJECT"] = original_project
 
     @property
     def provider(self) -> BaseLLMProvider:
@@ -121,12 +164,18 @@ class AIConnector:
 
         Returns:
             AIResponse with the model's response.
+
+        Note:
+            If LangSmith API key is configured, tracing will be enabled only
+            for the duration of this call using a context manager to avoid
+            global environment pollution.
         """
-        return self._provider.chat(
-            message=message,
-            system_prompt=system_prompt,
-            history=history,
-        )
+        with self._langsmith_context():
+            return self._provider.chat(
+                message=message,
+                system_prompt=system_prompt,
+                history=history,
+            )
 
     def invoke(
         self,
@@ -152,29 +201,35 @@ class AIConnector:
 
         Returns:
             AIResponse with the final result.
+
+        Note:
+            If LangSmith API key is configured, tracing will be enabled only
+            for the duration of this call using a context manager to avoid
+            global environment pollution.
         """
-        if not use_tools or len(self._registry) == 0:
-            return self.chat(message, system_prompt=system_prompt)
+        with self._langsmith_context():
+            if not use_tools or len(self._registry) == 0:
+                return self._provider.chat(message, system_prompt=system_prompt)
 
-        # Get filtered tools
-        tool_defs = self._registry.get_tools(categories=categories, names=tool_names)
+            # Get filtered tools
+            tool_defs = self._registry.get_tools(categories=categories, names=tool_names)
 
-        if not tool_defs:
-            return self.chat(message, system_prompt=system_prompt)
+            if not tool_defs:
+                return self._provider.chat(message, system_prompt=system_prompt)
 
-        # Convert to LangChain tools with bound instances
-        lc_tools = []
-        for tool_def in tool_defs:
-            instance = self._connector_instances.get(tool_def.category)
-            tools = self._factory.to_langchain_tools([tool_def], connector_instance=instance)
-            lc_tools.extend(tools)
+            # Convert to LangChain tools with bound instances
+            lc_tools = []
+            for tool_def in tool_defs:
+                instance = self._connector_instances.get(tool_def.category)
+                tools = self._factory.to_langchain_tools([tool_def], connector_instance=instance)
+                lc_tools.extend(tools)
 
-        return self._provider.invoke_with_tools(
-            message=message,
-            tools=lc_tools,
-            max_iterations=max_iterations,
-            system_prompt=system_prompt,
-        )
+            return self._provider.invoke_with_tools(
+                message=message,
+                tools=lc_tools,
+                max_iterations=max_iterations,
+                system_prompt=system_prompt,
+            )
 
     def register_connector_tools(
         self,
