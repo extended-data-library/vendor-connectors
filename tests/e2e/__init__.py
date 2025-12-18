@@ -21,3 +21,5 @@ Running E2E tests:
     # Replay from cassettes (no API keys needed)
     pytest tests/e2e -v
 """
+
+from __future__ import annotations

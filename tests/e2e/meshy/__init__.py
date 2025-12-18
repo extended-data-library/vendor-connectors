@@ -9,3 +9,5 @@ Cassette recording requires:
 
 Once cassettes are recorded, tests run without API keys.
 """
+
+from __future__ import annotations

@@ -194,9 +194,7 @@ class AWSS3Mixin:
 
         if content_type:
             put_args["ContentType"] = content_type
-        elif key.endswith(".json"):
-            put_args["ContentType"] = "application/json"
-        elif key.endswith(".tf.json"):
+        elif key.endswith(".json") or key.endswith(".tf.json"):
             put_args["ContentType"] = "application/json"
         elif key.endswith(".yaml") or key.endswith(".yml"):
             put_args["ContentType"] = "text/yaml"
