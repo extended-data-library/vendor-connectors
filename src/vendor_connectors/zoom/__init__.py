@@ -6,14 +6,36 @@ import base64
 from typing import Any, Optional
 
 import requests
-from directed_inputs_class import DirectedInputsClass
 from lifecyclelogging import Logging
+from pydantic import BaseModel, Field
+
+from vendor_connectors.base import VendorConnectorBase
 
 # Default timeout for HTTP requests in seconds
 DEFAULT_REQUEST_TIMEOUT = 30
 
 
-class ZoomConnector(DirectedInputsClass):
+class CreateZoomUserSchema(BaseModel):
+    """Pydantic schema for creating a Zoom user."""
+
+    email: str = Field(..., description="The email address of the user to create.")
+    first_name: str = Field(..., description="The first name of the user.")
+    last_name: str = Field(..., description="The last name of the user.")
+
+
+class RemoveZoomUserSchema(BaseModel):
+    """Pydantic schema for removing a Zoom user."""
+
+    email: str = Field(..., description="The email address of the user to remove.")
+
+
+class GetZoomUserSchema(BaseModel):
+    """Pydantic schema for getting a Zoom user."""
+
+    email: str = Field(..., description="The email address of the user to get.")
+
+
+class ZoomConnector(VendorConnectorBase):
     """Zoom connector for user management."""
 
     def __init__(
@@ -24,14 +46,17 @@ class ZoomConnector(DirectedInputsClass):
         logger: Optional[Logging] = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.logging = logger or Logging(logger_name="ZoomConnector")
-        self.logger = self.logging.logger
+        super().__init__(logger=logger, **kwargs)
         self.errors: list[str] = []  # Track errors for programmatic access
 
         self.client_id = client_id or self.get_input("ZOOM_CLIENT_ID", required=True)
         self.client_secret = client_secret or self.get_input("ZOOM_CLIENT_SECRET", required=True)
         self.account_id = account_id or self.get_input("ZOOM_ACCOUNT_ID", required=True)
+
+        # Register tools
+        self.register_pydantic_tool(self.create_zoom_user, CreateZoomUserSchema)
+        self.register_pydantic_tool(self.remove_zoom_user, RemoveZoomUserSchema)
+        self.register_pydantic_tool(self.get_zoom_user, GetZoomUserSchema)
 
     def get_access_token(self) -> Optional[str]:
         """Get an OAuth access token from Zoom."""
@@ -85,34 +110,53 @@ class ZoomConnector(DirectedInputsClass):
 
         return users
 
-    def remove_zoom_user(self, email: str) -> None:
+    def get_zoom_user(self, args: GetZoomUserSchema) -> Optional[dict[str, Any]]:
+        """Get a Zoom user by email."""
+        url = f"https://api.zoom.us/v2/users/{args.email}"
+        headers = self.get_headers()
+        try:
+            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as exc:
+            error_msg = f"Failed to get Zoom user {args.email}: {exc}"
+            self.errors.append(error_msg)
+            self.logger.error(error_msg)
+            return None
+
+    def remove_zoom_user(self, args: RemoveZoomUserSchema) -> None:
         """Remove a Zoom user."""
-        url = f"https://api.zoom.us/v2/users/{email}"
+        url = f"https://api.zoom.us/v2/users/{args.email}"
         headers = self.get_headers()
         try:
             response = requests.delete(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
             response.raise_for_status()
-            self.logger.warning(f"Removed Zoom user {email}")
+            self.logger.warning(f"Removed Zoom user {args.email}")
         except requests.exceptions.RequestException as exc:
-            error_msg = f"Failed to remove Zoom user {email}: {exc}"
+            error_msg = f"Failed to remove Zoom user {args.email}: {exc}"
             self.errors.append(error_msg)
             self.logger.error(error_msg)
 
-    def create_zoom_user(self, email: str, first_name: str, last_name: str) -> bool:
+    def create_zoom_user(self, args: CreateZoomUserSchema) -> bool:
         """Create a Zoom user with a paid license."""
         url = "https://api.zoom.us/v2/users"
         headers = self.get_headers()
         user_info = {
             "action": "create",
-            "user_info": {"email": email, "type": 2, "first_name": first_name, "last_name": last_name},
+            "user_info": {
+                "email": args.email,
+                "type": 2,
+                "first_name": args.first_name,
+                "last_name": args.last_name,
+            },
         }
         try:
             response = requests.post(url, headers=headers, json=user_info, timeout=DEFAULT_REQUEST_TIMEOUT)
             response.raise_for_status()
-            self.logger.info(f"Created Zoom user {email}")
+            self.logger.info(f"Created Zoom user {args.email}")
             return True
         except requests.exceptions.RequestException as exc:
-            error_msg = f"Failed to create Zoom user {email}: {exc}"
+            error_msg = f"Failed to create Zoom user {args.email}: {exc}"
             self.errors.append(error_msg)
             self.logger.error(error_msg)
             return False

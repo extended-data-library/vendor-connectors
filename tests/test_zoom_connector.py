@@ -112,6 +112,26 @@ class TestZoomConnector:
             **base_connector_kwargs,
         )
 
-        result = connector.create_zoom_user("newuser@example.com", "New", "User")
+        from vendor_connectors.zoom import CreateZoomUserSchema
+
+        result = connector.create_zoom_user(
+            CreateZoomUserSchema(email="newuser@example.com", first_name="New", last_name="User")
+        )
         assert result is True
         assert mock_post.call_count == 2
+
+    def test_get_vercel_ai_tools(self, base_connector_kwargs):
+        """Test getting Vercel AI tool definitions."""
+        connector = ZoomConnector(
+            client_id="test-client-id",
+            client_secret="test-client-secret",
+            account_id="test-account-id",
+            **base_connector_kwargs,
+        )
+
+        tools = connector.get_vercel_ai_tools()
+        assert len(tools) == 3
+        assert tools[0]["function"]["name"] == "create_zoom_user"
+        assert tools[1]["function"]["name"] == "remove_zoom_user"
+        assert tools[2]["function"]["name"] == "get_zoom_user"
+        assert "email" in tools[0]["function"]["parameters"]["properties"]

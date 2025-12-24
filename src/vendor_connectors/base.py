@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from langchain_core.tools import StructuredTool
+    from pydantic import BaseModel
 
 
 class RateLimitError(Exception):
@@ -140,6 +141,7 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
         # Tool registry for LangChain/MCP
         self._tools: list[StructuredTool] = []
         self._tool_functions: dict[str, Callable] = {}
+        self._pydantic_tools: dict[str, tuple[Callable, "type[BaseModel]"]] = {}
 
     @property
     def api_key(self) -> str:
@@ -362,6 +364,46 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
             tools.append(tool)
 
         return tools
+
+    # -------------------------------------------------------------------------
+    # Vercel AI SDK Tool Registration (Pydantic)
+    # -------------------------------------------------------------------------
+
+    def register_pydantic_tool(
+        self,
+        func: Callable,
+        schema: "type[BaseModel]",
+        name: str | None = None,
+    ) -> None:
+        """Register a function with a Pydantic schema for Vercel AI SDK.
+
+        Args:
+            func: The function to register.
+            schema: The Pydantic model for the function's arguments.
+            name: Tool name (defaults to function name).
+        """
+        tool_name = name or func.__name__
+        self._pydantic_tools[tool_name] = (func, schema)
+
+    def get_vercel_ai_tools(self) -> list[dict[str, Any]]:
+        """Get tool definitions in Vercel AI SDK format.
+
+        Returns:
+            List of Vercel AI SDK tool definition dicts.
+        """
+        definitions = []
+        for name, (func, schema) in self._pydantic_tools.items():
+            definitions.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": func.__doc__ or f"Tool: {name}",
+                        "parameters": schema.model_json_schema(),
+                    },
+                }
+            )
+        return definitions
 
     # -------------------------------------------------------------------------
     # MCP Server Helpers
