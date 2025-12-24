@@ -58,9 +58,9 @@ def _get_method_schema(method: Callable) -> dict[str, Any]:
                 prop = {"type": "number"}
             elif ann is bool:
                 prop = {"type": "boolean"}
-            elif ann is list or (hasattr(ann, "__origin__") and ann.__origin__ == list):
+            elif ann is list or (hasattr(ann, "__origin__") and ann.__origin__ is list):
                 prop = {"type": "array"}
-            elif ann is dict or (hasattr(ann, "__origin__") and ann.__origin__ == dict):
+            elif ann is dict or (hasattr(ann, "__origin__") and ann.__origin__ is dict):
                 prop = {"type": "object"}
         
         # Get description from docstring if available
