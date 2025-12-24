@@ -31,7 +31,10 @@ jobs:
           
           # Determine project based on labels and title
           LABELS="${{ join(github.event.issue.labels.*.name, ',') }}"
-          TITLE="${{ github.event.issue.title }}"
+          env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          TITLE="$ISSUE_TITLE"
           
           ADD_INTEGRATION=false
           ADD_ROADMAP=false

@@ -86,6 +86,7 @@ def text3d_generate(
     negative_prompt: str = "",
     target_polycount: int = 30000,
     enable_pbr: bool = True,
+    wait: bool = True,
 ) -> dict[str, Any]:
     """Generate a 3D model from text description.
 
@@ -97,6 +98,7 @@ def text3d_generate(
         target_polycount: Target polygon count
         enable_pbr: Enable PBR materials. API defaults to False; we default
             to True for better realistic renders. Set False for sculpture.
+        wait: Whether to wait for completion. Defaults to True.
 
     Returns:
         Dict with task_id, status, model_url, and thumbnail_url
@@ -109,7 +111,7 @@ def text3d_generate(
         negative_prompt=negative_prompt,
         target_polycount=target_polycount,
         enable_pbr=enable_pbr,
-        wait=True,
+        wait=wait,
     )
 
     fields = _extract_result_fields(result)
@@ -124,6 +126,7 @@ def image3d_generate(
     topology: str = "",
     target_polycount: int = 15000,
     enable_pbr: bool = True,
+    wait: bool = True,
 ) -> dict[str, Any]:
     """Generate a 3D model from an image.
 
@@ -132,6 +135,7 @@ def image3d_generate(
         topology: Mesh topology ("quad" or "triangle"), empty for default
         target_polycount: Target polygon count
         enable_pbr: Enable PBR materials
+        wait: Whether to wait for completion. Defaults to True.
 
     Returns:
         Dict with task_id, status, model_url, and thumbnail_url
@@ -143,7 +147,7 @@ def image3d_generate(
         topology=topology if topology else None,
         target_polycount=target_polycount,
         enable_pbr=enable_pbr,
-        wait=True,
+        wait=wait,
     )
 
     fields = _extract_result_fields(result)
@@ -586,13 +590,14 @@ def get_tools(framework: str = "auto") -> list[Any]:
     from vendor_connectors._compat import is_available
 
     if framework == "auto":
-        # Priority: Vercel > CrewAI > LangChain > Strands/functions
-        if is_available("pydantic"):
-            return get_vercel_tools()
+        # Priority: CrewAI > LangChain > Vercel > Strands/functions
+        # (CrewAI/LangChain first as they return specialized objects)
         if is_available("crewai"):
             return get_crewai_tools()
         if is_available("langchain_core"):
             return get_langchain_tools()
+        if is_available("pydantic"):
+            return get_vercel_tools()
         # Fall back to plain functions (always works)
         return get_strands_tools()
 
