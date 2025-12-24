@@ -466,8 +466,9 @@ class TestAutoDetection:
     )
     def test_get_tools_auto_detects_vercel_ai(self):
         """Test that get_tools auto-detects Vercel AI SDK."""
-        from vendor_connectors.meshy.tools import get_tools
         from ai_sdk.tool import Tool
+
+        from vendor_connectors.meshy.tools import get_tools
 
         with patch("vendor_connectors._compat.is_available") as mock_is_available:
             mock_is_available.side_effect = lambda pkg: pkg == "ai_sdk"
