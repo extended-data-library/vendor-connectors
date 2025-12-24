@@ -31,7 +31,7 @@ from vendor_connectors.registry import list_connectors, get_connector
 def _check_mcp_installed() -> bool:
     """Check if MCP SDK is installed."""
     try:
-        import mcp
+        from mcp.server import Server  # noqa: F401
         return True
     except ImportError:
         return False
@@ -52,15 +52,15 @@ def _get_method_schema(method: Callable) -> dict[str, Any]:
         # Try to get type from annotations
         if param.annotation != inspect.Parameter.empty:
             ann = param.annotation
-            if ann == int:
+            if ann is int:
                 prop = {"type": "integer"}
-            elif ann == float:
+            elif ann is float:
                 prop = {"type": "number"}
-            elif ann == bool:
+            elif ann is bool:
                 prop = {"type": "boolean"}
-            elif ann == list or (hasattr(ann, "__origin__") and ann.__origin__ == list):
+            elif ann is list or (hasattr(ann, "__origin__") and ann.__origin__ == list):
                 prop = {"type": "array"}
-            elif ann == dict or (hasattr(ann, "__origin__") and ann.__origin__ == dict):
+            elif ann is dict or (hasattr(ann, "__origin__") and ann.__origin__ == dict):
                 prop = {"type": "object"}
         
         # Get description from docstring if available
