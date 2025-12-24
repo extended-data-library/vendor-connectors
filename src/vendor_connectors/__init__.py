@@ -161,3 +161,23 @@ __all__ = [
     # Meshy AI (3D asset generation) - functional interface
     "meshy",
 ]
+
+# Registry - unified access to all connectors
+from vendor_connectors.registry import (
+    list_connectors,
+    get_connector,
+    get_connector_class,
+    get_connector_info,
+    list_connector_info,
+)
+
+__all__ = [
+    # Base
+    "VendorConnectorBase",
+    # Registry
+    "list_connectors",
+    "get_connector", 
+    "get_connector_class",
+    "get_connector_info",
+    "list_connector_info",
+]

@@ -1,42 +1,35 @@
 """Unified MCP Server for Vendor Connectors.
 
 This module provides a single MCP (Model Context Protocol) server that
-exposes ALL vendor connectors as tools. Connect once, access everything.
+exposes ALL vendor connectors as tools via the registry.
 
 Usage:
     # Command line
-    python -m vendor_connectors.mcp
-    
-    # Or via entry point
     vendor-connectors-mcp
+    
+    # Or programmatically
+    from vendor_connectors.mcp import create_server, main
+    server = create_server()
 
-Configure in Claude Desktop or any MCP client:
-    {
-      "mcpServers": {
-        "vendor-connectors": {
-          "command": "vendor-connectors-mcp",
-          "env": {
-            "CURSOR_API_KEY": "...",
-            "JULES_API_KEY": "...",
-            "GITHUB_TOKEN": "...",
-            "MESHY_API_KEY": "..."
-          }
-        }
-      }
-    }
+The server automatically discovers all registered connectors and exposes
+their public methods as MCP tools.
 
 This provides the bridge between TypeScript (@agentic/control) and Python
-(vendor-connectors) with zero custom code - just standard MCP over stdio.
+with zero custom code - just standard MCP over stdio.
 """
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
-from typing import Any, Optional
+from typing import Any, Callable, get_type_hints
 
-# Lazy imports for optional dependencies
-def _check_mcp():
+from vendor_connectors.registry import list_connectors, get_connector
+
+
+def _check_mcp_installed() -> bool:
+    """Check if MCP SDK is installed."""
     try:
         import mcp
         return True
@@ -44,8 +37,69 @@ def _check_mcp():
         return False
 
 
+def _get_method_schema(method: Callable) -> dict[str, Any]:
+    """Generate JSON schema from method signature."""
+    sig = inspect.signature(method)
+    properties = {}
+    required = []
+    
+    for name, param in sig.parameters.items():
+        if name in ("self", "cls"):
+            continue
+            
+        prop: dict[str, Any] = {"type": "string"}  # Default
+        
+        # Try to get type from annotations
+        if param.annotation != inspect.Parameter.empty:
+            ann = param.annotation
+            if ann == int:
+                prop = {"type": "integer"}
+            elif ann == float:
+                prop = {"type": "number"}
+            elif ann == bool:
+                prop = {"type": "boolean"}
+            elif ann == list or (hasattr(ann, "__origin__") and ann.__origin__ == list):
+                prop = {"type": "array"}
+            elif ann == dict or (hasattr(ann, "__origin__") and ann.__origin__ == dict):
+                prop = {"type": "object"}
+        
+        # Get description from docstring if available
+        if method.__doc__:
+            # Simple extraction - look for "name:" in docstring
+            for line in method.__doc__.split("\n"):
+                if f"{name}:" in line.lower():
+                    prop["description"] = line.split(":", 1)[-1].strip()
+                    break
+        
+        # Handle defaults
+        if param.default != inspect.Parameter.empty:
+            prop["default"] = param.default
+        else:
+            required.append(name)
+        
+        properties[name] = prop
+    
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": required,
+    }
+
+
+def _get_public_methods(connector_class: type) -> list[tuple[str, Callable]]:
+    """Get public methods from a connector class (excluding dunder and private)."""
+    methods = []
+    for name in dir(connector_class):
+        if name.startswith("_"):
+            continue
+        attr = getattr(connector_class, name, None)
+        if callable(attr) and not isinstance(attr, type):
+            methods.append((name, attr))
+    return methods
+
+
 def create_server():
-    """Create the unified MCP server with all available connectors."""
+    """Create the unified MCP server with all registered connectors."""
     try:
         from mcp.server import Server
         from mcp.types import Tool, TextContent
@@ -56,206 +110,40 @@ def create_server():
 
     server = Server("vendor-connectors")
     
-    # =========================================================================
-    # Tool Registry - All connectors expose their tools here
-    # =========================================================================
+    # Build tool registry from all connectors
+    TOOLS: dict[str, dict[str, Any]] = {}
     
-    TOOLS: dict[str, dict] = {}
+    # Discover all connectors
+    connectors = list_connectors()
     
-    # -------------------------------------------------------------------------
-    # Jules Tools (Google)
-    # -------------------------------------------------------------------------
-    
-    def _get_jules():
-        from vendor_connectors.google.jules import JulesConnector
-        api_key = os.environ.get("JULES_API_KEY")
-        if not api_key:
-            raise ValueError("JULES_API_KEY environment variable required")
-        return JulesConnector(api_key=api_key)
-    
-    TOOLS["jules_list_sources"] = {
-        "description": "List available GitHub repositories connected to Jules",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "page_size": {"type": "integer", "default": 100, "description": "Max results"}
+    for connector_name, connector_class in connectors.items():
+        # Get public methods
+        for method_name, method in _get_public_methods(connector_class):
+            # Skip common base class methods
+            if method_name in ("close", "request", "get_input", "register_tool"):
+                continue
+            
+            tool_name = f"{connector_name}_{method_name}"
+            
+            # Get method from class (unbound)
+            try:
+                schema = _get_method_schema(method)
+            except Exception:
+                schema = {"type": "object", "properties": {}}
+            
+            # Get description from docstring
+            description = ""
+            if method.__doc__:
+                description = method.__doc__.split("\n")[0].strip()
+            if not description:
+                description = f"{connector_name}.{method_name}()"
+            
+            TOOLS[tool_name] = {
+                "connector": connector_name,
+                "method": method_name,
+                "description": description,
+                "parameters": schema,
             }
-        },
-        "handler": lambda params: _get_jules().list_sources(params.get("page_size", 100))
-    }
-    
-    TOOLS["jules_create_session"] = {
-        "description": "Create a Jules session to work on a coding task. Returns session info with ID to poll.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "prompt": {"type": "string", "description": "Task description for Jules"},
-                "source": {"type": "string", "description": "Source name (e.g., sources/github/org/repo)"},
-                "title": {"type": "string", "description": "Optional session title"},
-                "starting_branch": {"type": "string", "default": "main", "description": "Git branch"},
-                "automation_mode": {"type": "string", "default": "AUTO_CREATE_PR", "description": "AUTO_CREATE_PR or MANUAL"}
-            },
-            "required": ["prompt", "source"]
-        },
-        "handler": lambda params: _get_jules().create_session(
-            prompt=params["prompt"],
-            source=params["source"],
-            title=params.get("title", ""),
-            starting_branch=params.get("starting_branch", "main"),
-            automation_mode=params.get("automation_mode", "AUTO_CREATE_PR")
-        )
-    }
-    
-    TOOLS["jules_get_session"] = {
-        "description": "Get the current status of a Jules session",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "session_name": {"type": "string", "description": "Session name (e.g., sessions/123)"}
-            },
-            "required": ["session_name"]
-        },
-        "handler": lambda params: _get_jules().get_session(params["session_name"])
-    }
-    
-    TOOLS["jules_add_message"] = {
-        "description": "Send a follow-up message to a Jules session",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "session_name": {"type": "string", "description": "Session name"},
-                "message": {"type": "string", "description": "Message to send"}
-            },
-            "required": ["session_name", "message"]
-        },
-        "handler": lambda params: _get_jules().add_user_response(params["session_name"], params["message"])
-    }
-    
-    # -------------------------------------------------------------------------
-    # Cursor Tools
-    # -------------------------------------------------------------------------
-    
-    def _get_cursor():
-        from vendor_connectors.cursor import CursorConnector
-        api_key = os.environ.get("CURSOR_API_KEY")
-        if not api_key:
-            raise ValueError("CURSOR_API_KEY environment variable required")
-        return CursorConnector(api_key=api_key)
-    
-    TOOLS["cursor_list_agents"] = {
-        "description": "List Cursor cloud agents",
-        "parameters": {"type": "object", "properties": {}},
-        "handler": lambda params: _get_cursor().list_agents()
-    }
-    
-    TOOLS["cursor_launch_agent"] = {
-        "description": "Launch a Cursor cloud agent for a coding task (expensive!)",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "prompt": {"type": "string", "description": "Task description"},
-                "repository": {"type": "string", "description": "GitHub repo (org/name)"},
-                "ref": {"type": "string", "default": "main", "description": "Git ref"}
-            },
-            "required": ["prompt"]
-        },
-        "handler": lambda params: _get_cursor().launch_agent(
-            prompt_text=params["prompt"],
-            repository=params.get("repository"),
-            ref=params.get("ref", "main")
-        )
-    }
-    
-    TOOLS["cursor_get_agent"] = {
-        "description": "Get status of a Cursor agent",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "agent_id": {"type": "string", "description": "Agent ID"}
-            },
-            "required": ["agent_id"]
-        },
-        "handler": lambda params: _get_cursor().get_agent(params["agent_id"])
-    }
-    
-    # -------------------------------------------------------------------------
-    # GitHub Tools
-    # -------------------------------------------------------------------------
-    
-    def _get_github():
-        from vendor_connectors.github import GitHubConnector
-        token = os.environ.get("GITHUB_TOKEN")
-        if not token:
-            raise ValueError("GITHUB_TOKEN environment variable required")
-        return GitHubConnector(token=token)
-    
-    TOOLS["github_list_repos"] = {
-        "description": "List GitHub repositories for a user or organization",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "owner": {"type": "string", "description": "User or org name"},
-                "type": {"type": "string", "default": "all", "description": "all, owner, member"}
-            }
-        },
-        "handler": lambda params: _get_github().list_repos(
-            owner=params.get("owner"),
-            repo_type=params.get("type", "all")
-        )
-    }
-    
-    TOOLS["github_create_issue"] = {
-        "description": "Create a GitHub issue",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "owner": {"type": "string", "description": "Repo owner"},
-                "repo": {"type": "string", "description": "Repo name"},
-                "title": {"type": "string", "description": "Issue title"},
-                "body": {"type": "string", "description": "Issue body"}
-            },
-            "required": ["owner", "repo", "title"]
-        },
-        "handler": lambda params: _get_github().create_issue(
-            owner=params["owner"],
-            repo=params["repo"],
-            title=params["title"],
-            body=params.get("body", "")
-        )
-    }
-    
-    # -------------------------------------------------------------------------
-    # Meshy Tools (3D Generation)
-    # -------------------------------------------------------------------------
-    
-    def _get_meshy():
-        from vendor_connectors.meshy import MeshyConnector
-        api_key = os.environ.get("MESHY_API_KEY")
-        if not api_key:
-            raise ValueError("MESHY_API_KEY environment variable required")
-        return MeshyConnector(api_key=api_key)
-    
-    TOOLS["meshy_text_to_3d"] = {
-        "description": "Generate a 3D model from text description",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "prompt": {"type": "string", "description": "Text description of the 3D model"},
-                "art_style": {"type": "string", "default": "realistic", "description": "realistic or sculpture"},
-                "target_polycount": {"type": "integer", "default": 30000}
-            },
-            "required": ["prompt"]
-        },
-        "handler": lambda params: _get_meshy().text_to_3d(
-            prompt=params["prompt"],
-            art_style=params.get("art_style", "realistic"),
-            target_polycount=params.get("target_polycount", 30000)
-        )
-    }
-    
-    # =========================================================================
-    # MCP Server Handlers
-    # =========================================================================
     
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -275,24 +163,47 @@ def create_server():
         if name not in TOOLS:
             return [TextContent(type="text", text=f"Unknown tool: {name}")]
         
+        tool = TOOLS[name]
+        connector_name = tool["connector"]
+        method_name = tool["method"]
+        
         try:
-            result = TOOLS[name]["handler"](arguments)
+            # Instantiate connector (will get credentials from env)
+            connector = get_connector(connector_name)
+            
+            # Get and call the method
+            method = getattr(connector, method_name)
+            result = method(**arguments)
+            
+            # Handle async methods
+            if inspect.iscoroutine(result):
+                import asyncio
+                result = await result
+            
             # Convert Pydantic models to dict
             if hasattr(result, "model_dump"):
                 result = result.model_dump()
             elif hasattr(result, "__iter__") and not isinstance(result, (str, dict)):
-                result = [r.model_dump() if hasattr(r, "model_dump") else r for r in result]
+                result = [
+                    r.model_dump() if hasattr(r, "model_dump") else r 
+                    for r in result
+                ]
             
-            return [TextContent(type="text", text=json.dumps(result, indent=2, default=str))]
+            return [TextContent(
+                type="text", 
+                text=json.dumps(result, indent=2, default=str)
+            )]
+            
         except Exception as e:
-            return [TextContent(type="text", text=f"Error: {e}")]
+            return [TextContent(type="text", text=f"Error: {type(e).__name__}: {e}")]
     
     return server
 
 
-def main():
+def main() -> int:
     """Run the MCP server over stdio."""
     import asyncio
+    
     try:
         from mcp.server.stdio import stdio_server
     except ImportError:
@@ -303,7 +214,11 @@ def main():
     
     async def run():
         async with stdio_server() as (read_stream, write_stream):
-            await server.run(read_stream, write_stream, server.create_initialization_options())
+            await server.run(
+                read_stream, 
+                write_stream, 
+                server.create_initialization_options()
+            )
     
     asyncio.run(run())
     return 0
