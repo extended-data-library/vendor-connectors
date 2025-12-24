@@ -22,10 +22,9 @@ from __future__ import annotations
 
 import inspect
 import json
-import os
-from typing import Any, Callable, get_type_hints
+from typing import Any, Callable
 
-from vendor_connectors.registry import list_connectors, get_connector
+from vendor_connectors.registry import get_connector, list_connectors
 
 
 def _check_mcp_installed() -> bool:
@@ -102,7 +101,7 @@ def create_server():
     """Create the unified MCP server with all registered connectors."""
     try:
         from mcp.server import Server
-        from mcp.types import Tool, TextContent
+        from mcp.types import TextContent, Tool
     except ImportError as e:
         raise ImportError(
             "MCP SDK not installed. Install with: pip install vendor-connectors[mcp]"
@@ -177,7 +176,6 @@ def create_server():
             
             # Handle async methods
             if inspect.iscoroutine(result):
-                import asyncio
                 result = await result
             
             # Convert Pydantic models to dict

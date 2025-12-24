@@ -24,14 +24,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import inspect
 import json
 import os
 import sys
 from typing import Any
 
 from vendor_connectors.registry import (
-    list_connectors,
     get_connector,
     get_connector_class,
     list_connector_info,

@@ -37,17 +37,17 @@ if TYPE_CHECKING:
     from vendor_connectors.base import VendorConnectorBase
 
 # Cache for discovered connectors
-_connector_cache: dict[str, Type["VendorConnectorBase"]] | None = None
+_connector_cache: dict[str, Type[VendorConnectorBase]] | None = None
 
 
-def _discover_connectors() -> dict[str, Type["VendorConnectorBase"]]:
+def _discover_connectors() -> dict[str, Type[VendorConnectorBase]]:
     """Discover all registered connectors via entry points."""
     global _connector_cache
     
     if _connector_cache is not None:
         return _connector_cache
     
-    connectors: dict[str, Type["VendorConnectorBase"]] = {}
+    connectors: dict[str, Type[VendorConnectorBase]] = {}
     
     # Python 3.10+ uses importlib.metadata
     if sys.version_info >= (3, 10):
@@ -65,7 +65,7 @@ def _discover_connectors() -> dict[str, Type["VendorConnectorBase"]]:
         except Exception as e:
             # Log but don't fail - allow partial loading
             import warnings
-            warnings.warn(f"Failed to load connector '{ep.name}': {e}")
+            warnings.warn(f"Failed to load connector '{ep.name}': {e}", stacklevel=2)
     
     # Also include built-in connectors not yet in entry points
     # (for development/transition period)
@@ -75,7 +75,7 @@ def _discover_connectors() -> dict[str, Type["VendorConnectorBase"]]:
     return connectors
 
 
-def _register_builtins(connectors: dict[str, Type["VendorConnectorBase"]]) -> None:
+def _register_builtins(connectors: dict[str, Type[VendorConnectorBase]]) -> None:
     """Register built-in connectors that may not be in entry points yet."""
     builtins = {
         # Google connectors
@@ -108,7 +108,7 @@ def _register_builtins(connectors: dict[str, Type["VendorConnectorBase"]]) -> No
             pass  # Optional dependency not installed
 
 
-def list_connectors() -> dict[str, Type["VendorConnectorBase"]]:
+def list_connectors() -> dict[str, Type[VendorConnectorBase]]:
     """List all available connectors.
     
     Returns:
@@ -117,7 +117,7 @@ def list_connectors() -> dict[str, Type["VendorConnectorBase"]]:
     return _discover_connectors().copy()
 
 
-def get_connector_class(name: str) -> Type["VendorConnectorBase"]:
+def get_connector_class(name: str) -> Type[VendorConnectorBase]:
     """Get a connector class by name.
     
     Args:
@@ -139,7 +139,7 @@ def get_connector_class(name: str) -> Type["VendorConnectorBase"]:
     return connectors[name_lower]
 
 
-def get_connector(name: str, **kwargs: Any) -> "VendorConnectorBase":
+def get_connector(name: str, **kwargs: Any) -> VendorConnectorBase:
     """Factory to instantiate a connector by name.
     
     Args:

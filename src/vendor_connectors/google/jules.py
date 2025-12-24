@@ -27,8 +27,6 @@ Reference: https://developers.google.com/jules/api
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
