@@ -48,6 +48,33 @@ if TYPE_CHECKING:
     from langchain_core.tools import StructuredTool
 
 
+from pydantic import BaseModel, Field
+
+
+# Vercel AI SDK Tool Definitions
+class Property(BaseModel):
+    """Pydantic model for a single tool parameter property."""
+
+    type: str
+    enum: list[str] | None = None
+
+
+class ToolParameters(BaseModel):
+    """Pydantic model for Vercel AI SDK tool parameters (JSON Schema)."""
+
+    type: str = "object"
+    properties: dict[str, Property] = Field(default_factory=dict)
+    required: list[str] = Field(default_factory=list)
+
+
+class ToolDefinition(BaseModel):
+    """Pydantic model for a Vercel AI SDK tool definition."""
+
+    name: str
+    description: str
+    parameters: ToolParameters
+
+
 class RateLimitError(Exception):
     """Raised when API rate limit is hit - triggers retry."""
 
@@ -60,6 +87,12 @@ class ConnectorAPIError(Exception):
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.status_code = status_code
+
+
+class ConnectorConfigurationError(ValueError):
+    """Raised when a connector is misconfigured."""
+
+    pass
 
 
 class VendorConnectorBase(DirectedInputsClass, ABC):
@@ -146,7 +179,7 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
         """Get API key, raising if not set."""
         if not self._api_key:
             msg = f"{self.API_KEY_ENV or 'API key'} not set"
-            raise ValueError(msg)
+            raise ConnectorConfigurationError(msg)
         return self._api_key
 
     @property
@@ -367,6 +400,26 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
     # MCP Server Helpers
     # -------------------------------------------------------------------------
 
+    def _get_param_type(self, param: inspect.Parameter) -> Property:
+        """Get JSON schema type for a parameter."""
+        import inspect
+        from enum import Enum
+
+        param_type = "string"
+        enum = None
+
+        if param.annotation != inspect.Parameter.empty:
+            if param.annotation in (int, float):
+                param_type = "number"
+            elif param.annotation is bool:
+                param_type = "boolean"
+            elif hasattr(param.annotation, "__origin__") and param.annotation.__origin__ in (list, dict):
+                param_type = "array" if param.annotation.__origin__ is list else "object"
+            elif inspect.isclass(param.annotation) and issubclass(param.annotation, Enum):
+                enum = [e.value for e in param.annotation]
+
+        return Property(type=param_type, enum=enum)
+
     def get_mcp_tool_definitions(self) -> list[dict[str, Any]]:
         """Get tool definitions in MCP format.
 
@@ -385,14 +438,10 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
                 if param_name == "self":
                     continue
 
-                param_type = "string"
-                if param.annotation != inspect.Parameter.empty:
-                    if param.annotation in (int, float):
-                        param_type = "number"
-                    elif param.annotation is bool:
-                        param_type = "boolean"
-
-                properties[param_name] = {"type": param_type}
+                prop = self._get_param_type(param)
+                properties[param_name] = {"type": prop.type}
+                if prop.enum:
+                    properties[param_name]["enum"] = prop.enum
 
                 if param.default == inspect.Parameter.empty:
                     required.append(param_name)
@@ -408,6 +457,40 @@ class VendorConnectorBase(DirectedInputsClass, ABC):
                     },
                 }
             )
+
+        return definitions
+
+    def get_vercel_ai_tool_definitions(self) -> list[ToolDefinition]:
+        """Get tool definitions in Vercel AI SDK compatible format.
+
+        Returns:
+            List of ToolDefinition Pydantic models
+        """
+        import inspect
+
+        definitions = []
+        for name, func in self._tool_functions.items():
+            sig = inspect.signature(func)
+            properties = {}
+            required = []
+
+            for param_name, param in sig.parameters.items():
+                if param_name == "self":
+                    continue
+
+                properties[param_name] = self._get_param_type(param)
+
+                if param.default == inspect.Parameter.empty:
+                    required.append(param_name)
+
+            tool_parameters = ToolParameters(properties=properties, required=required)
+
+            tool_definition = ToolDefinition(
+                name=name,
+                description=func.__doc__ or f"Tool: {name}",
+                parameters=tool_parameters,
+            )
+            definitions.append(tool_definition)
 
         return definitions
 

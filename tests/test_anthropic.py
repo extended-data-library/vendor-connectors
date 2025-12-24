@@ -10,13 +10,13 @@ import pytest
 from vendor_connectors.anthropic import (
     CLAUDE_MODELS,
     AnthropicConnector,
-    AnthropicError,
     ContentBlock,
     Message,
     MessageRole,
     Model,
     Usage,
 )
+from vendor_connectors.base import ConnectorConfigurationError
 
 
 class TestModels:
@@ -77,7 +77,7 @@ class TestAnthropicConnector:
     def test_init_without_api_key(self):
         """Initialization without API key should fail."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(AnthropicError, match="ANTHROPIC_API_KEY is required"):
+            with pytest.raises(ConnectorConfigurationError, match="ANTHROPIC_API_KEY not set"):
                 AnthropicConnector()
 
     def test_init_with_api_key(self):
@@ -217,6 +217,23 @@ class TestAnthropicConnector:
 
             assert len(models) == 2
             assert models[0].id == "claude-sonnet-4-20250514"
+
+    def test_get_vercel_ai_tool_definitions(self):
+        """get_vercel_ai_tool_definitions should return Vercel AI SDK compatible tool definitions."""
+        import httpx
+
+        with patch.object(httpx, "Client"):
+            connector = AnthropicConnector(api_key="test-key")
+            tool_definitions = connector.get_vercel_ai_tool_definitions()
+
+            assert len(tool_definitions) == 1
+            tool = tool_definitions[0]
+            assert tool.name == "get_weather"
+            assert "Get the weather for a city" in tool.description
+            assert tool.parameters.type == "object"
+            assert "city" in tool.parameters.properties
+            assert tool.parameters.properties["city"]["type"] == "string"
+            assert "city" in tool.parameters.required
 
 
 class TestClaudeModels:

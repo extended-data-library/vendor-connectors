@@ -31,9 +31,10 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-from directed_inputs_class import DirectedInputsClass
 from lifecyclelogging import Logging
 from pydantic import BaseModel, ConfigDict, Field
+
+from ..base import VendorConnectorBase
 
 if TYPE_CHECKING:
     pass
@@ -190,7 +191,7 @@ class AgentExecutionResult:
 # =============================================================================
 
 
-class AnthropicConnector(DirectedInputsClass):
+class AnthropicConnector(VendorConnectorBase):
     """Anthropic Claude API connector.
 
     Provides HTTP client access to Anthropic's Claude AI API for message
@@ -213,6 +214,9 @@ class AnthropicConnector(DirectedInputsClass):
         >>> print(response.text)
     """
 
+    API_KEY_ENV = "ANTHROPIC_API_KEY"
+    BASE_URL = DEFAULT_API_URL
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -221,26 +225,15 @@ class AnthropicConnector(DirectedInputsClass):
         logger: Optional[Logging] = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.logging = logger or Logging(logger_name="AnthropicConnector")
-        self.logger = self.logging.logger
-
-        # Get API key
-        self.api_key = (
-            api_key or self.get_input("ANTHROPIC_API_KEY", required=False) or os.environ.get("ANTHROPIC_API_KEY")
-        )
-        if not self.api_key:
-            raise AnthropicError("ANTHROPIC_API_KEY is required. Set it in environment or pass to constructor.")
-
+        super().__init__(api_key=api_key, timeout=timeout, logger=logger, **kwargs)
         self.api_version = api_version
-        self.timeout = timeout
 
         # Lazy import httpx to avoid issues if not installed
         import httpx
 
         self._client = httpx.Client(
             base_url=DEFAULT_API_URL,
-            timeout=self.timeout,
+            timeout=self._timeout,
             headers={
                 "x-api-key": self.api_key,
                 "anthropic-version": self.api_version,
@@ -249,6 +242,24 @@ class AnthropicConnector(DirectedInputsClass):
         )
 
         self.logger.info(f"Initialized AnthropicConnector with API version: {self.api_version}")
+
+        # Register a tool to demonstrate Vercel AI SDK compatibility
+        self.register_tool(self.get_weather)
+
+    def get_weather(self, city: str) -> str:
+        """Get the weather for a city.
+        Args:
+            city: The city to get the weather for.
+        Returns:
+            The weather forecast.
+        """
+        # In a real implementation, this would call a weather API.
+        if "tokyo" in city.lower():
+            return "The weather in Tokyo is sunny."
+        elif "san francisco" in city.lower():
+            return "The weather in San Francisco is foggy."
+        else:
+            return f"I don't know the weather for {city}."
 
     def __enter__(self):
         return self
