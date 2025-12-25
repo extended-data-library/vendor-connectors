@@ -160,4 +160,19 @@ __all__ = [
     "get_google_call_params",
     # Meshy AI (3D asset generation) - functional interface
     "meshy",
+    # Registry - unified access to all connectors
+    "list_connectors",
+    "get_connector",
+    "get_connector_class",
+    "get_connector_info",
+    "list_connector_info",
 ]
+
+# Registry - unified access to all connectors
+from vendor_connectors.registry import (
+    get_connector,
+    get_connector_class,
+    get_connector_info,
+    list_connector_info,
+    list_connectors,
+)

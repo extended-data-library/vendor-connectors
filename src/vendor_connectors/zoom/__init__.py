@@ -6,14 +6,15 @@ import base64
 from typing import Any, Optional
 
 import requests
-from directed_inputs_class import DirectedInputsClass
 from lifecyclelogging import Logging
+
+from vendor_connectors.base import VendorConnectorBase
 
 # Default timeout for HTTP requests in seconds
 DEFAULT_REQUEST_TIMEOUT = 30
 
 
-class ZoomConnector(DirectedInputsClass):
+class ZoomConnector(VendorConnectorBase):
     """Zoom connector for user management."""
 
     def __init__(
@@ -24,9 +25,7 @@ class ZoomConnector(DirectedInputsClass):
         logger: Optional[Logging] = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.logging = logger or Logging(logger_name="ZoomConnector")
-        self.logger = self.logging.logger
+        super().__init__(logger=logger, **kwargs)
         self.errors: list[str] = []  # Track errors for programmatic access
 
         self.client_id = client_id or self.get_input("ZOOM_CLIENT_ID", required=True)
@@ -116,3 +115,91 @@ class ZoomConnector(DirectedInputsClass):
             self.errors.append(error_msg)
             self.logger.error(error_msg)
             return False
+
+    def list_users(self) -> dict[str, dict[str, Any]]:
+        """List all Zoom users.
+
+        This is an alias for get_zoom_users() for consistency with AI tools naming.
+
+        Returns:
+            Dictionary mapping user emails to user data
+        """
+        return self.get_zoom_users()
+
+    def get_user(self, user_id: str) -> dict[str, Any]:
+        """Get a specific Zoom user by ID or email.
+
+        Args:
+            user_id: User ID or email address
+
+        Returns:
+            User data dictionary
+        """
+        url = f"https://api.zoom.us/v2/users/{user_id}"
+        headers = self.get_headers()
+
+        try:
+            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as exc:
+            raise RuntimeError(f"Failed to get Zoom user {user_id}: {exc}") from exc
+
+    def list_meetings(self, user_id: str, meeting_type: str = "scheduled") -> list[dict[str, Any]]:
+        """List meetings for a specific user.
+
+        Args:
+            user_id: User ID or email address
+            meeting_type: Type of meetings to list (scheduled, live, upcoming, previous_meetings)
+
+        Returns:
+            List of meeting data dictionaries
+        """
+        url = f"https://api.zoom.us/v2/users/{user_id}/meetings"
+        headers = self.get_headers()
+        params = {"type": meeting_type}
+
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("meetings", [])
+        except requests.exceptions.RequestException as exc:
+            raise RuntimeError(f"Failed to list meetings for user {user_id}: {exc}") from exc
+
+    def get_meeting(self, meeting_id: str) -> dict[str, Any]:
+        """Get details of a specific meeting.
+
+        Args:
+            meeting_id: Meeting ID
+
+        Returns:
+            Meeting data dictionary
+        """
+        url = f"https://api.zoom.us/v2/meetings/{meeting_id}"
+        headers = self.get_headers()
+
+        try:
+            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as exc:
+            raise RuntimeError(f"Failed to get meeting {meeting_id}: {exc}") from exc
+
+
+from vendor_connectors.zoom.tools import (
+    get_crewai_tools,
+    get_langchain_tools,
+    get_strands_tools,
+    get_tools,
+)
+
+__all__ = [
+    # Tools
+    "get_tools",
+    "get_langchain_tools",
+    "get_crewai_tools",
+    "get_strands_tools",
+    # Core connector
+    "ZoomConnector",
+]
