@@ -37,10 +37,10 @@ class TestGoogleToolDefinitions:
             assert defn["name"].startswith("google_"), f"Tool name not prefixed: {defn['name']}"
 
     def test_tool_count(self):
-        """Test that we have exactly 5 tools as specified."""
+        """Test that we have exactly 6 tools as specified."""
         from vendor_connectors.google.tools import TOOL_DEFINITIONS
 
-        assert len(TOOL_DEFINITIONS) == 5
+        assert len(TOOL_DEFINITIONS) == 6
 
 
 class TestListProjects:
@@ -354,7 +354,7 @@ class TestGetTools:
         from vendor_connectors.google.tools import get_strands_tools
 
         tools = get_strands_tools()
-        assert len(tools) == 5
+        assert len(tools) == 6
         assert all(callable(t) for t in tools)
 
     @patch("vendor_connectors._compat.is_available")
@@ -366,7 +366,7 @@ class TestGetTools:
 
         tools = get_tools(framework="auto")
 
-        assert len(tools) == 5
+        assert len(tools) == 6
         assert all(callable(t) for t in tools)
 
     def test_get_tools_invalid_framework(self):
@@ -381,7 +381,7 @@ class TestGetTools:
         from vendor_connectors.google.tools import get_tools
 
         tools = get_tools(framework="functions")
-        assert len(tools) == 5
+        assert len(tools) == 6
         assert all(callable(t) for t in tools)
 
     def test_all_exports_exist(self):
