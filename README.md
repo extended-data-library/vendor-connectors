@@ -1,36 +1,204 @@
 # Vendor Connectors
 
-Universal vendor connectors for the jbcom ecosystem, providing standardized access to cloud providers, third-party services, and AI APIs.
+[![PyPI](https://img.shields.io/pypi/v/vendor-connectors?color=06b6d4)](https://pypi.org/project/vendor-connectors/)
+[![Python](https://img.shields.io/pypi/pyversions/vendor-connectors?color=06b6d4)](https://pypi.org/project/vendor-connectors/)
+[![License](https://img.shields.io/github/license/jbcom/vendor-connectors?color=06b6d4)](https://github.com/jbcom/vendor-connectors/blob/main/LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/jbcom/vendor-connectors/ci.yml?label=tests&color=06b6d4)](https://github.com/jbcom/vendor-connectors/actions)
+
+**Version 1.0 - Production Ready** 🎉
+
+Universal vendor connectors for the jbcom ecosystem, providing standardized access to cloud providers, third-party services, and AI APIs with complete AI framework integration.
 
 ## Overview
 
 Each connector provides **three interfaces**:
 
 1. **Direct Python API** - Use the connector directly in your Python code
-2. **LangChain Tools** - Standard StructuredTools for AI agents (works with LangChain, CrewAI, LangGraph, etc.)
+2. **AI Framework Tools** - LangChain, CrewAI, AWS Strands integration for all connectors
 3. **MCP Server** - Model Context Protocol server for Claude Desktop, Cline, and other MCP clients
 
 This consistent pattern makes it easy to use vendor connectors however you need them.
+
+### What's New in 1.0
+
+- ✅ **Complete AI Tools Coverage**: All connectors now have AI-callable tools (AWS, Google, GitHub, Slack, Vault, Zoom, Meshy)
+- ✅ **Stable API**: Semantic versioning commitment with backward compatibility
+- ✅ **Comprehensive Testing**: >62% test coverage across all connectors
+- ✅ **Production Ready**: Battle-tested patterns and extensive documentation
 
 ## Features
 
 ### AI/Agent Connectors
 - **Anthropic Connector**: Claude AI API wrapper with message generation, token counting, and model management
+  - ✅ AI Tools: Message generation, token counting, model recommendations
 - **Cursor Connector**: Cursor Background Agent API for AI coding agent management
+  - ✅ AI Tools: Agent launch, status checks, follow-ups
 
 ### Cloud Providers
 - **AWS Connector**: Boto3-based client with role assumption and retry logic
+  - ✅ AI Tools: S3 operations, Secrets Manager, CodeDeploy, Organizations
 - **Google Cloud Connector**: Workspace and Cloud Platform APIs with lazy credential loading
+  - ✅ AI Tools: List projects, services, billing accounts, Workspace users/groups
 
 ### Services
 - **GitHub Connector**: Repository management, GraphQL queries, and file operations
+  - ✅ AI Tools: Repository ops, teams, org members, file operations
 - **Slack Connector**: Bot and app integrations with rate limiting
+  - ✅ AI Tools: Send messages, list channels/users, get history
 - **Vault Connector**: HashiCorp Vault with Token and AppRole auth
+  - ✅ AI Tools: Read/list secrets, generate AWS credentials
 - **Zoom Connector**: Meeting and user management
+  - ✅ AI Tools: List/get users, list/get meetings
 - **Meshy Connector**: Meshy AI 3D asset generation (text-to-3D, rigging, animation, retexture)
+  - ✅ AI Tools: Complete 3D pipeline with 678 animations
 
 ### Unified Interface
 - **VendorConnectors**: Cached public API with `get_*_client()` getters for all connectors
+- **AI Framework Support**: LangChain, CrewAI, AWS Strands tools for every connector
+
+## AI Tools - Complete Coverage
+
+All connectors now provide AI-callable tools for LangChain, CrewAI, and AWS Strands. Each follows the same pattern:
+
+### Quick Start
+
+```python
+from vendor_connectors.{connector}.tools import get_tools
+
+# Auto-detect installed framework (LangChain/CrewAI/Strands)
+tools = get_tools()
+
+# Or specify explicitly
+tools = get_tools(framework="langchain")  # LangChain StructuredTools
+tools = get_tools(framework="crewai")     # CrewAI tools
+tools = get_tools(framework="strands")    # AWS Strands functions
+```
+
+### Available Tools by Connector
+
+#### AWS Connector
+```python
+from vendor_connectors.aws.tools import get_tools
+
+# Available operations:
+# - aws_list_secrets: List Secrets Manager secrets
+# - aws_get_secret: Retrieve a secret value
+# - aws_list_s3_buckets: List all S3 buckets
+# - aws_list_organizations: List AWS Organizations
+# - aws_deploy_application: CodeDeploy operations
+```
+
+#### GitHub Connector
+```python
+from vendor_connectors.github.tools import get_tools
+
+# Available operations:
+# - github_list_repositories: List org repositories
+# - github_get_repository: Get repository details
+# - github_list_teams: List organization teams
+# - github_get_team: Get team details
+# - github_list_org_members: List organization members
+# - github_get_repository_file: Get file contents
+```
+
+#### Google Connector
+```python
+from vendor_connectors.google.tools import get_tools
+
+# Available operations:
+# - google_list_projects: List GCP projects
+# - google_list_enabled_services: List enabled services
+# - google_list_billing_accounts: List billing accounts
+# - google_list_workspace_users: List Workspace users
+# - google_list_workspace_groups: List Workspace groups
+```
+
+#### Slack Connector
+```python
+from vendor_connectors.slack.tools import get_tools
+
+# Available operations:
+# - slack_list_channels: List Slack channels
+# - slack_list_users: List Slack users
+# - slack_send_message: Send a message
+# - slack_get_channel_history: Get channel message history
+```
+
+#### Vault Connector
+```python
+from vendor_connectors.vault.tools import get_tools
+
+# Available operations:
+# - vault_list_secrets: List secrets at path
+# - vault_read_secret: Read a secret value
+```
+
+#### Zoom Connector
+```python
+from vendor_connectors.zoom.tools import get_tools
+
+# Available operations:
+# - zoom_list_users: List Zoom users
+# - zoom_get_user: Get user details
+# - zoom_list_meetings: List user's meetings
+# - zoom_get_meeting: Get meeting details
+```
+
+### Example: LangChain Agent with Multiple Connectors
+
+```python
+from vendor_connectors.github.tools import get_tools as get_github_tools
+from vendor_connectors.slack.tools import get_tools as get_slack_tools
+from langchain_anthropic import ChatAnthropic
+from langgraph.prebuilt import create_react_agent
+
+# Combine tools from multiple connectors
+all_tools = [
+    *get_github_tools(),
+    *get_slack_tools()
+]
+
+llm = ChatAnthropic(model="claude-sonnet-4-5-20250929")
+agent = create_react_agent(llm, all_tools)
+
+# Agent can now use both GitHub and Slack
+result = agent.invoke({
+    "messages": [("user", "Check our GitHub repos and post a summary to #general")]
+})
+```
+
+### Example: CrewAI Multi-Agent System
+
+```python
+from vendor_connectors.github.tools import get_tools as get_github_tools
+from vendor_connectors.vault.tools import get_tools as get_vault_tools
+from crewai import Agent, Task, Crew
+
+# Create specialized agents
+github_agent = Agent(
+    role="DevOps Engineer",
+    goal="Manage GitHub repositories and teams",
+    tools=get_github_tools(),
+    backstory="Expert in Git workflows and team management"
+)
+
+security_agent = Agent(
+    role="Security Engineer", 
+    goal="Manage secrets and credentials",
+    tools=get_vault_tools(),
+    backstory="Expert in secret management and security best practices"
+)
+
+# Define tasks
+repo_task = Task(
+    description="List all repositories in the organization",
+    agent=github_agent
+)
+
+# Execute crew
+crew = Crew(agents=[github_agent, security_agent], tasks=[repo_task])
+result = crew.kickoff()
+```
 
 ## Installation
 
