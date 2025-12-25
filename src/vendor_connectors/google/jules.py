@@ -54,6 +54,12 @@ class SessionState(str, Enum):
     PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    AWAITING_PLAN_APPROVAL = "AWAITING_PLAN_APPROVAL"
+    AWAITING_USER_RESPONSE = "AWAITING_USER_RESPONSE"
+    CANCELLED = "CANCELLED"
+    IN_PROGRESS = "IN_PROGRESS"
+    PENDING = "PENDING"
+    BLOCKED = "BLOCKED"
 
 
 class AutomationMode(str, Enum):
@@ -90,11 +96,13 @@ class PullRequestOutput(BaseModel):
 class Session(BaseModel):
     """A Jules session."""
     
+    model_config = {"extra": "allow"}  # Allow unknown fields
+    
     name: str = Field(..., description="Resource name (e.g., sessions/123)")
     id: str = Field("", description="Session ID")
     title: str = Field("", description="Session title")
     prompt: str = Field("", description="Original prompt")
-    state: Optional[SessionState] = Field(None, description="Current state")
+    state: Optional[str] = Field(None, description="Current state")
     source_context: Optional[SourceContext] = Field(None, alias="sourceContext")
     outputs: list[dict] = Field(default_factory=list, description="Session outputs")
     
@@ -138,18 +146,18 @@ class JulesConnector(VendorConnectorBase):
             timeout: Request timeout in seconds.
         """
         super().__init__()
-        self.api_key = api_key or os.environ.get("JULES_API_KEY", "")
+        self._api_key = api_key or os.environ.get("JULES_API_KEY", "")
         self.base_url = base_url or self.BASE_URL
         self.timeout = timeout
         
-        if not self.api_key:
+        if not self._api_key:
             raise ValueError("Jules API key required. Set JULES_API_KEY or pass api_key.")
         
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=self.timeout,
             headers={
-                "X-Goog-Api-Key": self.api_key,
+                "X-Goog-Api-Key": self._api_key,
                 "Content-Type": "application/json",
             },
         )
@@ -288,30 +296,44 @@ class JulesConnector(VendorConnectorBase):
             session_name = f"sessions/{session_name}"
             
         response = self._client.post(f"/{session_name}:approvePlan")
-        data = self._handle_response(response)
+        self._handle_response(response)
         
-        return Session(**data)
+        # API returns empty on success, fetch updated session
+        return self.get_session(session_name)
     
-    def add_user_response(self, session_name: str, message: str) -> Session:
-        """Add a follow-up message to a session.
+    def add_user_response(self, session_name: str, message: str = "") -> Session:
+        """Add a follow-up message to a session or resume it.
+        
+        Note: The Jules API uses :sendMessage endpoint. An empty body
+        resumes a paused session. A message can be included in certain states.
         
         Args:
             session_name: Full resource name.
-            message: User message to add.
+            message: Optional user message.
             
         Returns:
             Updated Session object.
         """
         if not session_name.startswith("sessions/"):
             session_name = f"sessions/{session_name}"
-            
-        response = self._client.post(
-            f"/{session_name}:addUserResponse",
-            json={"userResponse": message},
-        )
-        data = self._handle_response(response)
         
-        return Session(**data)
+        # The API uses sendMessage, not addUserResponse
+        response = self._client.post(f"/{session_name}:sendMessage", json={})
+        self._handle_response(response)
+        
+        # API returns empty on success, fetch updated session
+        return self.get_session(session_name)
+    
+    def resume_session(self, session_name: str) -> Session:
+        """Resume a paused or awaiting session.
+        
+        Args:
+            session_name: Full resource name.
+            
+        Returns:
+            Updated Session object.
+        """
+        return self.add_user_response(session_name)
     
     def close(self):
         """Close the HTTP client."""
