@@ -29,7 +29,7 @@ dependencies = [
     # jbcom ecosystem
     "extended-data-types>=2025.11.164",
     "lifecyclelogging>=202511.3.0",
-    "directed-inputs-class>=0.9.0,<1.0.0",
+    "directed-inputs-class>=1.0.0",
     # HTTP client with retries
     "httpx>=0.28.1",
     "tenacity>=9.1.2",
@@ -248,7 +248,30 @@ all = [
 ]
 
 [project.scripts]
+vendor-connectors = "vendor_connectors.cli:main"
+vendor-connectors-mcp = "vendor_connectors.mcp:main"
+# Legacy - keeping for backwards compatibility  
 meshy-mcp = "vendor_connectors.meshy.mcp:main"
+
+
+
+
+[project.entry-points."vendor_connectors.connectors"]
+# Google connectors
+jules = "vendor_connectors.google.jules:JulesConnector"
+google = "vendor_connectors.google:GoogleConnector"
+google_cloud = "vendor_connectors.google:GoogleCloudConnector"
+google_workspace = "vendor_connectors.google:GoogleWorkspaceConnector"
+google_billing = "vendor_connectors.google:GoogleBillingConnector"
+# Other connectors
+cursor = "vendor_connectors.cursor:CursorConnector"
+github = "vendor_connectors.github:GitHubConnector"
+meshy = "vendor_connectors.meshy:MeshyConnector"
+anthropic = "vendor_connectors.anthropic:AnthropicConnector"
+aws = "vendor_connectors.aws:AWSConnector"
+slack = "vendor_connectors.slack:SlackConnector"
+zoom = "vendor_connectors.zoom:ZoomConnector"
+vault = "vendor_connectors.vault:VaultConnector"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vendor_connectors"]
