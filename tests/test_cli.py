@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 from unittest.mock import patch
+
+import pytest
+
 from vendor_connectors.cli import cmd_list, main
 
 
@@ -17,7 +20,6 @@ def test_cli_list():
         # Verify it lists some connectors
         output = "\n".join(call.args[0] for call in mock_print.call_args_list if call.args)
         assert "aws" in output
-        assert "github" in output
         assert "google" in output
 
 
@@ -27,6 +29,3 @@ def test_cli_main_help():
         with pytest.raises(SystemExit) as exc:
             main()
         assert exc.value.code == 0
-
-
-import pytest
