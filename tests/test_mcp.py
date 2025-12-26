@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from vendor_connectors.mcp import create_server
 
 

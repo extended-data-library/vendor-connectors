@@ -1,0 +1,104 @@
+/* jbcom Documentation Design System - Sphinx Styles */
+/* Colors from 03-docs-branding.mdc */
+
+:root {
+    --jb-bg: #0a0f1a;
+    --jb-surface: #111827;
+    --jb-primary: #06b6d4;
+    --jb-secondary: #3b82f6;
+    --jb-text-main: #f1f5f9;
+    --jb-text-muted: #94a3b8;
+    --jb-success: #10b981;
+    --jb-warning: #f59e0b;
+    --jb-error: #ef4444;
+}
+
+/* RTD Theme Overrides */
+.wy-nav-side {
+    background: var(--jb-surface) !important;
+}
+
+.wy-side-nav-search {
+    background: var(--jb-bg) !important;
+}
+
+.wy-nav-content-wrap {
+    background: var(--jb-bg) !important;
+}
+
+.wy-body-for-nav {
+    background: var(--jb-bg) !important;
+    color: var(--jb-text-main) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: var(--jb-text-main) !important;
+}
+
+body {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--jb-text-main) !important;
+}
+
+a {
+    color: var(--jb-primary) !important;
+}
+
+a:hover {
+    color: var(--jb-secondary) !important;
+}
+
+/* Code blocks */
+code, kbd, pre, samp {
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+.highlight {
+    background: var(--jb-surface) !important;
+    border: 1px solid var(--jb-text-muted);
+    border-radius: 8px;
+}
+
+/* Admonitions */
+.admonition {
+    border-radius: 8px !important;
+    background: var(--jb-surface) !important;
+}
+
+.admonition-title {
+    background: var(--jb-secondary) !important;
+}
+
+.admonition.note .admonition-title { background: var(--jb-secondary) !important; }
+.admonition.warning .admonition-title { background: var(--jb-warning) !important; }
+.admonition.danger .admonition-title { background: var(--jb-error) !important; }
+.admonition.tip .admonition-title { background: var(--jb-success) !important; }
+
+/* Tables */
+table.docutils {
+    background: var(--jb-surface) !important;
+    color: var(--jb-text-main) !important;
+    border: 1px solid var(--jb-text-muted) !important;
+}
+
+table.docutils th {
+    background: var(--jb-bg) !important;
+    color: var(--jb-primary) !important;
+}
+
+/* Navigation */
+.wy-menu-vertical a {
+    color: var(--jb-text-muted) !important;
+}
+
+.wy-menu-vertical a:hover {
+    background: var(--jb-bg) !important;
+    color: var(--jb-text-main) !important;
+}
+
+.wy-menu-vertical li.current a {
+    background: var(--jb-bg) !important;
+    color: var(--jb-primary) !important;
+    border-right: 4px solid var(--jb-primary);
+}

@@ -32,6 +32,7 @@ jobs:
       - uses: hynek/build-and-inspect-python-package@d1b0f96a0a46b28c389aa982cfa69be61ea2dcbd # v2
         with:
           attest-build-provenance-github: false
+          upload-name: Packages
 
   test:
     name: Test py${{ matrix.python-version }}
@@ -134,12 +135,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: semantic-release version
 
-      - name: Download packages
+      - name: Build package with new version
         if: steps.check.outputs.should_release == 'true'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          name: Packages
-          path: dist
+        run: uv build
 
       - name: Publish to PyPI
         if: steps.check.outputs.should_release == 'true'

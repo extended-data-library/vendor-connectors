@@ -6,7 +6,6 @@ AI agent frameworks.
 
 from __future__ import annotations
 
-import os
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
