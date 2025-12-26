@@ -86,17 +86,30 @@ Get tools ready for your favorite AI framework:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Development
+   :caption: Architecture
 
-   development/contributing
-   development/building-connector-tools
+   architecture/index
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference
+   :caption: Guides
 
-   api/index
+   guides/building-connector-tools
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+
+   contributing
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Enterprise
+
+   jbcom Hub <https://jbcom.github.io>
+   Agentic Docs <https://agentic.dev>
+   Strata Docs <https://strata.game>
+   Extended Data <https://extendeddata.dev>
 
 Indices and tables
 ==================

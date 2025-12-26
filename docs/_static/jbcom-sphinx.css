@@ -1,104 +1,65 @@
-/* jbcom Documentation Design System - Sphinx Styles */
-/* Colors from 03-docs-branding.mdc */
+/* 
+  jbcom Sphinx Theme - Base
+  Derived from jbcom Design System
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
-    --jb-bg: #0a0f1a;
-    --jb-surface: #111827;
-    --jb-primary: #06b6d4;
-    --jb-secondary: #3b82f6;
-    --jb-text-main: #f1f5f9;
-    --jb-text-muted: #94a3b8;
-    --jb-success: #10b981;
-    --jb-warning: #f59e0b;
-    --jb-error: #ef4444;
+    --bg-default: #0a0f1a;
+    --bg-paper: #111827;
+    --primary: #f59e0b;
+    --secondary: #fef3c7;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* RTD Theme Overrides */
+/* Sphinx RTD Theme Overrides */
 .wy-nav-side {
-    background: var(--jb-surface) !important;
+    background: var(--bg-paper) !important;
 }
 
 .wy-side-nav-search {
-    background: var(--jb-bg) !important;
+    background: #451a03 !important;
 }
 
 .wy-nav-content-wrap {
-    background: var(--jb-bg) !important;
+    background: var(--bg-default) !important;
+    color: var(--text-secondary);
 }
 
 .wy-body-for-nav {
-    background: var(--jb-bg) !important;
-    color: var(--jb-text-main) !important;
+    background: var(--bg-default) !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif !important;
-    color: var(--jb-text-main) !important;
+    font-family: var(--font-heading) !important;
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
 }
 
 body {
-    font-family: 'Inter', sans-serif !important;
-    color: var(--jb-text-main) !important;
+    font-family: var(--font-body) !important;
+    color: var(--text-secondary) !important;
 }
 
-a {
-    color: var(--jb-primary) !important;
-}
-
-a:hover {
-    color: var(--jb-secondary) !important;
-}
-
-/* Code blocks */
-code, kbd, pre, samp {
-    font-family: 'JetBrains Mono', monospace !important;
+code, pre {
+    font-family: var(--font-mono) !important;
 }
 
 .highlight {
-    background: var(--jb-surface) !important;
-    border: 1px solid var(--jb-text-muted);
+    background: var(--bg-paper) !important;
+    border: 1px solid #1e293b;
     border-radius: 8px;
 }
 
-/* Admonitions */
-.admonition {
-    border-radius: 8px !important;
-    background: var(--jb-surface) !important;
+a {
+    color: var(--primary) !important;
 }
 
-.admonition-title {
-    background: var(--jb-secondary) !important;
-}
-
-.admonition.note .admonition-title { background: var(--jb-secondary) !important; }
-.admonition.warning .admonition-title { background: var(--jb-warning) !important; }
-.admonition.danger .admonition-title { background: var(--jb-error) !important; }
-.admonition.tip .admonition-title { background: var(--jb-success) !important; }
-
-/* Tables */
-table.docutils {
-    background: var(--jb-surface) !important;
-    color: var(--jb-text-main) !important;
-    border: 1px solid var(--jb-text-muted) !important;
-}
-
-table.docutils th {
-    background: var(--jb-bg) !important;
-    color: var(--jb-primary) !important;
-}
-
-/* Navigation */
-.wy-menu-vertical a {
-    color: var(--jb-text-muted) !important;
-}
-
-.wy-menu-vertical a:hover {
-    background: var(--jb-bg) !important;
-    color: var(--jb-text-main) !important;
-}
-
-.wy-menu-vertical li.current a {
-    background: var(--jb-bg) !important;
-    color: var(--jb-primary) !important;
-    border-right: 4px solid var(--jb-primary);
+a:hover {
+    color: #fbbf24 !important;
 }
