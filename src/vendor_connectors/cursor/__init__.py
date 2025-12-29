@@ -158,8 +158,11 @@ class ConversationMessage(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    role: str = Field(description="Message role (user/assistant/system)")
-    content: str = Field(description="Message content")
+    id: Optional[str] = Field(default=None, description="Message identifier")
+    role: Optional[str] = Field(default=None, description="Message role (user/assistant/system)")
+    content: Optional[str] = Field(default=None, description="Message content")
+    text: Optional[str] = Field(default=None, description="Message text (alternative to content)")
+    type: Optional[str] = Field(default=None, description="Message type")
     timestamp: Optional[datetime] = Field(default=None, description="Message timestamp")
 
 
