@@ -358,17 +358,22 @@ class SecretsConnector(VendorConnectorBase):
 
         cmd = [
             self._cli_path,
-            options.operation.value,
+            "pipeline",
             "--config", config_path,
             "--output", "json",
         ]
+
+        if options.operation == SyncOperation.MERGE:
+            cmd.append("--merge-only")
+        elif options.operation == SyncOperation.SYNC:
+            cmd.append("--sync-only")
 
         if options.dry_run:
             cmd.append("--dry-run")
         if options.compute_diff:
             cmd.append("--diff")
         if options.output_format:
-            cmd.extend(["--format", options.output_format.value])
+            cmd.extend(["--output", options.output_format.value])
         if options.targets:
             cmd.extend(["--targets", ",".join(options.targets)])
         if options.continue_on_error:

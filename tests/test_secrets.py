@@ -1,5 +1,4 @@
 import json
-import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,7 +10,6 @@ from vendor_connectors.secrets import (
     SecretsConnector,
     SyncOperation,
     SyncOptions,
-    SyncResult,
 )
 
 
@@ -88,9 +86,10 @@ def test_cli_run_pipeline_operation(mock_run, connector):
     assert result.success is True
     assert result.secrets_processed == 5
     
-    # Check that the second argument is "merge", not "pipeline"
+    # Check that it uses "pipeline" command with "--merge-only" flag
     args = mock_run.call_args[0][0]
-    assert args[1] == "merge"
+    assert args[1] == "pipeline"
+    assert "--merge-only" in args
 
 
 @patch("subprocess.run")
@@ -111,7 +110,7 @@ def test_cli_run_pipeline_diff_and_format(mock_run, connector):
     
     args = mock_run.call_args[0][0]
     assert "--diff" in args
-    assert "--format" in args
+    assert "--output" in args
     assert "json" in args
 
 
