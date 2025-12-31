@@ -129,7 +129,8 @@ class Agent(BaseModel):
     model_config = ConfigDict(extra="allow")  # Allow additional fields from API
 
     id: str = Field(description="Unique agent identifier")
-    state: AgentState = Field(description="Current agent state")
+    state: Optional[AgentState] = Field(default=None, description="Current agent state")
+    status: Optional[str] = Field(default=None, description="Agent status string")
     task: Optional[str] = Field(default=None, description="Task description")
     repository: Optional[str] = Field(default=None, description="Repository name")
     branch: Optional[str] = Field(default=None, description="Branch name")
@@ -157,8 +158,11 @@ class ConversationMessage(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    role: str = Field(description="Message role (user/assistant/system)")
-    content: str = Field(description="Message content")
+    id: Optional[str] = Field(default=None, description="Message identifier")
+    role: Optional[str] = Field(default=None, description="Message role (user/assistant/system)")
+    content: Optional[str] = Field(default=None, description="Message content")
+    text: Optional[str] = Field(default=None, description="Message text (alternative to content)")
+    type: Optional[str] = Field(default=None, description="Message type")
     timestamp: Optional[datetime] = Field(default=None, description="Message timestamp")
 
 

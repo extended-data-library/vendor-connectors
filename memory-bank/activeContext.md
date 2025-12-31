@@ -185,3 +185,47 @@ pip install langchain-google-genai  # For Gemini
 ## Session: 2025-12-24
 - Updated `directed-inputs-class` dependency to semver constraint `>=0.9.0,<1.0.0` in `pyproject.toml`
 - Updated `requires-python` to `>=3.10` and adjusted classifiers to resolve dependency conflicts with `crewai`
+
+---
+
+## Session: 2025-12-29 (Cursor Session Management)
+
+### Overview
+Acting as a session manager for Cursor Cloud Agents across multiple repositories.
+
+### Cursor Connector Fixes Applied
+- **Agent model**: Made `state` field optional (API returns `status` instead)
+- **ConversationMessage model**: Made `role`, `content` fields optional, added `id`, `text`, `type` fields
+
+### Active Sessions Monitored (3 RUNNING)
+1. **bc-af73c4b5** - Session management (THIS session) - vendor-connectors
+2. **bc-4ea9ae93** - CI fix vignette darkness - arcade-cabinet/otter-elite-force
+3. **bc-eaeb7e94** - Sentinel CSP CI fix - arcade-cabinet/protocol-silent-night
+
+### Finished Sessions (17 total)
+Notable PRs created by finished agents:
+- **otter-elite-force**: PR #72 (vignette adjustment)
+- **cosmic-cults**: PR #21 (generator integration)
+- **rivermarsh**: PRs #96-104 (boss battles, quests, achievements, mana, mobile polish, persistence)
+
+### Repository Status Summary
+
+| Repository | Open PRs | CI Status | Key Issues |
+|------------|----------|-----------|------------|
+| otter-elite-force | 7 | PR #66 passing, PR #71 failing | Review feedback pending on PR #66 |
+| protocol-silent-night | 9 | Multiple CI failures | CSP blocking workers |
+| rivermarsh | 10 | Unknown | Many feature PRs need review |
+| cosmic-cults | 8 | Unknown | WIP features in progress |
+
+### Follow-ups Sent
+- Sent status check to bc-4ea9ae93 re: PR #66 magic numbers feedback, other PRs needing attention
+- Sent status check to bc-eaeb7e94 re: PR #38 CSP fixes, other CI failures
+
+### Next Steps
+- [ ] Monitor agent responses to follow-ups
+- [ ] Ensure all PRs get proper AI peer review
+- [ ] Help agents resolve any blockers
+- [ ] Track PRs through to merge
+
+---
+*Last updated: 2025-12-29*

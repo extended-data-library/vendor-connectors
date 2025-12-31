@@ -23,6 +23,8 @@ class ListSecretsSchema(BaseModel):
     max_depth: Optional[int] = Field(None, description="Maximum directory depth to traverse.")
 
 
+ListSecretsSchema.model_rebuild()
+
 class ReadSecretSchema(BaseModel):
     """Schema for reading a Vault secret."""
 
@@ -146,7 +148,8 @@ def get_crewai_tools() -> list[Any]:
 
     tools = []
     for defn in TOOL_DEFINITIONS:
-        wrapped = crewai_tool(defn["name"])(defn["func"])
+        schema = defn.get("schema") or defn.get("args_schema")
+        wrapped = crewai_tool(defn["name"], args_schema=schema)(defn["func"])
         wrapped.description = defn["description"]
         schema = defn.get("schema") or defn.get("args_schema")
         if schema:
@@ -195,3 +198,4 @@ __all__ = [
     "read_secret",
     "TOOL_DEFINITIONS",
 ]
+ReadSecretSchema.model_rebuild()
