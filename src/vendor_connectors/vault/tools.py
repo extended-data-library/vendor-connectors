@@ -146,7 +146,8 @@ def get_crewai_tools() -> list[Any]:
 
     tools = []
     for defn in TOOL_DEFINITIONS:
-        wrapped = crewai_tool(defn["name"])(defn["func"])
+        schema = defn.get("schema") or defn.get("args_schema")
+        wrapped = crewai_tool(defn["name"], args_schema=schema)(defn["func"])
         wrapped.description = defn["description"]
         schema = defn.get("schema") or defn.get("args_schema")
         if schema:
